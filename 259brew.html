@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>259 Brewing Company — Gestión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #1c1710;
+  --bg2:      #241f16;
+  --bg3:      #2d2720;
+  --bg4:      #36302a;
+  --border:   rgba(210,185,140,0.10);
+  --border2:  rgba(210,185,140,0.20);
+  --border3:  rgba(210,185,140,0.35);
+  --gold:     #c8935a;
+  --gold2:    #dba96e;
+  --gold3:    #ead4a8;
+  --cream:    #f0e8d4;
+  --muted:    rgba(240,232,212,0.45);
+  --muted2:   rgba(240,232,212,0.25);
+  --green:    #5a7a4a;
+  --green2:   #7a9e68;
+  --red2:     #c46050;
+  --amber:    #c87830;
+  --teal:     #4a7870;
+  --teal2:    #6aa098;
+  --font-d:   'Playfair Display', Georgia, serif;
+  --font-b:   'Crimson Pro', Georgia, serif;
+  --font-m:   'DM Mono', monospace;
+  --r:        10px;
+  --r2:       14px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+
+html,body{height:100%;background:var(--bg);color:var(--cream);font-family:var(--font-b);font-size:16px;line-height:1.5;overflow-x:hidden;}
+
+/* ── GRAIN OVERLAY ─────────────────────────────── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.35;mix-blend-mode:overlay;
+}
+
+/* ── MOUNTAIN BG ───────────────────────────────── */
+.mountain-bg{
+  position:fixed;bottom:0;left:0;right:0;height:220px;pointer-events:none;z-index:0;opacity:0.06;
+}
+
+/* ── LAYOUT ────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1;}
+
+/* ── TOPBAR ────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:0 20px;height:58px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border2);
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(8px);
+}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;}
+.logo-badge{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--bg3);border:1.5px solid var(--border3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-d);font-size:13px;font-weight:900;color:var(--gold);
+  letter-spacing:-0.5px;flex-shrink:0;
+}
+.logo-text{font-family:var(--font-d);font-size:17px;font-weight:700;color:var(--cream);letter-spacing:0.3px;line-height:1.1;}
+.logo-sub{font-family:var(--font-b);font-size:11px;color:var(--muted);font-weight:300;font-style:italic;letter-spacing:0.5px;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+.btn{
+  font-family:var(--font-m);font-size:11.5px;font-weight:500;
+  border:none;border-radius:var(--r);cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;transition:all 0.18s;
+}
+.btn-primary{background:var(--gold);color:var(--bg);letter-spacing:0.3px;}
+.btn-primary:hover{background:var(--gold2);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);}
+.btn-ghost:hover{color:var(--cream);border-color:var(--border3);}
+.btn-sm{padding:6px 10px;font-size:11px;}
+.btn-danger{background:rgba(196,96,80,0.15);color:var(--red2);border:1px solid rgba(196,96,80,0.25);}
+.btn-danger:hover{background:rgba(196,96,80,0.25);}
+
+/* ── BOTTOM NAV (mobile) ───────────────────────── */
+.bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--bg2);border-top:1px solid var(--border2);
+  padding:6px 0 env(safe-area-inset-bottom,6px);
+  z-index:100;
+}
+.bnav-items{display:flex;justify-content:space-around;}
+.bnav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 12px;cursor:pointer;border-radius:8px;
+  font-family:var(--font-m);font-size:9px;color:var(--muted2);
+  transition:all 0.15s;min-width:56px;
+}
+.bnav-item.active{color:var(--gold);}
+.bnav-icon{font-size:18px;line-height:1;}
+
+/* ── DESKTOP SIDEBAR ───────────────────────────── */
+.content-wrap{display:flex;flex:1;}
+.sidebar{
+  width:210px;flex-shrink:0;
+  background:var(--bg2);border-right:1px solid var(--border);
+  padding:20px 0;display:flex;flex-direction:column;gap:2px;
+  position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;
+}
+.nav-section{font-family:var(--font-m);font-size:9px;color:var(--muted2);letter-spacing:1.8px;text-transform:uppercase;padding:14px 18px 5px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 18px;cursor:pointer;
+  font-family:var(--font-b);font-size:15px;color:var(--muted);
+  border-left:2px solid transparent;transition:all 0.14s;
+}
+.nav-item:hover{color:var(--cream);background:rgba(200,147,90,0.05);}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(200,147,90,0.08);}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+
+/* ── MAIN ──────────────────────────────────────── */
+.main{flex:1;padding:24px;max-width:1100px;width:100%;display:flex;flex-direction:column;gap:22px;padding-bottom:40px;}
+
+/* ── PAGE HEADER ───────────────────────────────── */
+.page-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.page-title{font-family:var(--font-d);font-size:28px;font-weight:700;color:var(--cream);letter-spacing:-0.5px;line-height:1;}
+.page-sub{font-family:var(--font-b);font-size:14px;color:var(--muted);font-style:italic;margin-top:3px;}
+
+/* ── CARDS & GRIDS ─────────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;}
+.card-title{
+  font-family:var(--font-m);font-size:10px;color:var(--muted);
+  letter-spacing:1.4px;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;
+}
+.card-link{color:var(--gold);cursor:pointer;font-size:11px;letter-spacing:0;text-transform:none;font-family:var(--font-b);}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+
+/* ── STAT CARDS ────────────────────────────────── */
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r2);padding:16px 18px;
+}
+.stat-label{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.stat-val{font-family:var(--font-d);font-size:32px;font-weight:700;color:var(--cream);letter-spacing:-1.5px;line-height:1;}
+.stat-unit{font-family:var(--font-b);font-size:14px;color:var(--muted);margin-left:3px;font-weight:300;}
+.stat-note{font-family:var(--font-b);font-size:12px;color:var(--muted);margin-top:5px;font-style:italic;}
+.stat-ok{color:var(--green2)!important;}
+.stat-warn{color:var(--amber)!important;}
+.stat-danger{color:var(--red2)!important;}
+
+/* ── BADGES ────────────────────────────────────── */
+.badge{font-family:var(--font-m);font-size:10px;padding:3px 9px;border-radius:20px;letter-spacing:0.3px;font-weight:500;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.badge-green{background:rgba(90,122,74,0.2);color:#8dc07a;border:1px solid rgba(90,122,74,0.3);}
+.badge-amber{background:rgba(200,120,48,0.2);color:#e0a060;border:1px solid rgba(200,120,48,0.3);}
+.badge-red{background:rgba(196,96,80,0.2);color:#e08070;border:1px solid rgba(196,96,80,0.3);}
+.badge-teal{background:rgba(74,120,112,0.2);color:#80c0b8;border:1px solid rgba(74,120,112,0.3);}
+.badge-gold{background:rgba(200,147,90,0.15);color:var(--gold2);border:1px solid rgba(200,147,90,0.25);}
+.badge-gray{background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border);}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.dot-green{background:var(--green2);}
+.dot-amber{background:var(--amber);}
+.dot-red{background:var(--red2);}
+.dot-teal{background:var(--teal2);}
+
+/* ── PROGRESS BAR ──────────────────────────────── */
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px;}
+.prog-fill{height:100%;border-radius:2px;}
+.prog-green{background:var(--green2);}
+.prog-amber{background:var(--amber);}
+.prog-gold{background:var(--gold);}
+.prog-teal{background:var(--teal2);}
+
+/* ── PROCESS ITEMS ─────────────────────────────── */
+.proc-item{padding:13px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
+.proc-item:last-child{border-bottom:none;padding-bottom:0;}
+.proc-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.proc-name{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--cream);}
+.proc-meta{font-family:var(--font-b);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;}
+
+/* ── TABLES ────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-family:var(--font-b);font-size:14px;}
+.tbl th{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border2);text-align:left;font-weight:400;}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--cream);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,0.02);}
+.tbl .num{font-family:var(--font-d);font-size:16px;font-weight:700;}
+.tbl .muted{color:var(--muted);font-size:13px;}
+.tbl .actions{display:flex;gap:6px;justify-content:flex-end;}
+
+/* ── FORMS ─────────────────────────────────────── */
+.form-grid{display:grid;gap:14px;}
+.form-grid-2{grid-template-columns:1fr 1fr;}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.form-input,.form-select,.form-textarea{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r);padding:10px 13px;
+  font-family:var(--font-b);font-size:15px;color:var(--cream);
+  outline:none;transition:border-color 0.15s;width:100%;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--muted2);}
+.form-select option{background:var(--bg3);}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-hint{font-family:var(--font-b);font-size:12px;color:var(--muted);font-style:italic;}
+
+/* ── MODAL ─────────────────────────────────────── */
+.modal-ov{
+  display:none;position:fixed;inset:0;background:rgba(10,8,5,0.82);
+  z-index:200;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(4px);
+}
+.modal-ov.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r2);
+  padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;
+  display:flex;flex-direction:column;gap:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.6);
+}
+.modal-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.modal-title{font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--cream);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:0 4px;flex-shrink:0;}
+.modal-close:hover{color:var(--cream);}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding-top:4px;}
+
+/* ── QUICK ADD MENU ─────────────────────────────── */
+.qa-option{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;
+  transition:all 0.15s;
+}
+.qa-option:hover{border-color:var(--gold);background:rgba(200,147,90,0.07);}
+.qa-icon{font-size:22px;width:32px;text-align:center;flex-shrink:0;}
+.qa-title{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--cream);}
+.qa-sub{font-family:var(--font-b);font-size:13px;color:var(--muted);font-style:italic;}
+
+/* ── TABS ───────────────────────────────────────── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);}
+.tab{
+  padding:9px 18px;font-family:var(--font-b);font-size:14px;
+  color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;
+}
+.tab:hover{color:var(--cream);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ── RECIPE CARDS ───────────────────────────────── */
+.recipe-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
+  padding:18px;cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;gap:10px;
+}
+.recipe-card:hover{border-color:var(--border3);background:var(--bg3);}
+.recipe-name{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--cream);}
+.recipe-style{font-family:var(--font-b);font-size:13px;color:var(--muted);font-style:italic;}
+.recipe-ing{font-family:var(--font-b);font-size:13px;color:var(--muted);line-height:1.6;}
+.recipe-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;}
+.recipe-cost{font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--gold);}
+.recipe-cost span{font-family:var(--font-b);font-size:12px;color:var(--muted);font-weight:300;}
+
+/* ── DIVIDER ────────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:4px 0;}
+
+/* ── EMPTY STATE ────────────────────────────────── */
+.empty{
+  text-align:center;padding:48px 24px;display:flex;flex-direction:column;
+  align-items:center;gap:12px;
+}
+.empty-icon{font-size:40px;opacity:0.4;}
+.empty-text{font-family:var(--font-d);font-size:18px;color:var(--muted);}
+.empty-sub{font-family:var(--font-b);font-size:14px;color:var(--muted2);font-style:italic;}
+
+/* ── TOAST ──────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--bg3);border:1px solid var(--border3);border-radius:var(--r);
+  padding:12px 20px;font-family:var(--font-b);font-size:14px;color:var(--cream);
+  z-index:500;opacity:0;transition:all 0.25s;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── INGREDIENT ROW IN RECIPE FORM ──────────────── */
+.ing-row{display:grid;grid-template-columns:1fr 90px 90px 32px;gap:8px;align-items:end;}
+.ing-del{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;height:36px;width:32px;display:flex;align-items:center;justify-content:center;transition:all 0.14s;font-size:14px;}
+.ing-del:hover{border-color:var(--red2);color:var(--red2);}
+
+/* ── MOBILE RESPONSIVE ──────────────────────────── */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .bottom-nav{display:block;}
+  .main{padding:16px;padding-bottom:90px;gap:16px;}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .form-grid-2,.form-grid-3{grid-template-columns:1fr;}
+  .page-title{font-size:22px;}
+  .stat-val{font-size:26px;}
+  .tbl th,.tbl td{padding:8px 10px;}
+  .topbar{padding:0 14px;}
+  .logo-text{font-size:15px;}
+  .modal{padding:18px;}
+  .tabs{overflow-x:auto;}
+  .ing-row{grid-template-columns:1fr 80px 80px 32px;}
+}
+
+/* ── DECORATIVE SEPARATOR ───────────────────────── */
+.orn{color:var(--muted2);font-size:12px;letter-spacing:6px;text-align:center;padding:8px 0;}
+
+/* ── FILE INPUT ─────────────────────────────────── */
+.file-label{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
+  padding:12px 14px;cursor:pointer;transition:all 0.15s;
+  font-family:var(--font-b);font-size:14px;color:var(--muted);
+}
+.file-label:hover{border-color:var(--gold);color:var(--cream);}
+input[type=file]{display:none;}
+
+/* ── INLINE ALERT ───────────────────────────────── */
+.alert{
+  background:rgba(200,120,48,0.10);border:1px solid rgba(200,120,48,0.25);
+  border-radius:var(--r);padding:12px 14px;
+  font-family:var(--font-b);font-size:13px;color:#e0a060;display:flex;align-items:flex-start;gap:8px;
+}
+
+/* ── PAGE PANELS ────────────────────────────────── */
+.page{display:none;flex-direction:column;gap:22px;}
+.page.active{display:flex;}
+</style>
+</head>
+<body>
+
+<!-- MOUNTAIN SVG BG -->
+<svg class="mountain-bg" viewBox="0 0 1200 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <polygon points="0,220 0,160 120,80 240,140 380,40 520,120 620,60 720,130 850,20 980,100 1100,50 1200,90 1200,220" fill="#c8935a"/>
+</svg>
+
+<div class="app">
+
+<!-- ══ TOPBAR ══════════════════════════════════════ -->
+<div class="topbar">
+  <div class="logo-wrap" onclick="navTo('inicio')">
+    <div class="logo-badge">259</div>
+    <div>
+      <div class="logo-text">259 Brewing Co.</div>
+      <div class="logo-sub">Trevelin, Patagonia</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-primary" onclick="openQA()">
+      <span style="font-size:16px;line-height:1">+</span> Agregar
+    </button>
+  </div>
+</div>
+
+<!-- ══ BODY ═══════════════════════════════════════ -->
+<div class="content-wrap">
+
+  <!-- SIDEBAR DESKTOP -->
+  <nav class="sidebar">
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" id="nav-inicio" onclick="navTo('inicio')">
+      <span class="nav-icon">◈</span> Inicio
+    </div>
+    <div class="nav-item" id="nav-produccion" onclick="navTo('produccion')">
+      <span class="nav-icon">⚗</span> Producción
+    </div>
+    <div class="nav-item" id="nav-inventario" onclick="navTo('inventario')">
+      <span class="nav-icon">▦</span> Inventario
+    </div>
+    <div class="nav-item" id="nav-recetas" onclick="navTo('recetas')">
+      <span class="nav-icon">✦</span> Recetas
+    </div>
+    <div class="nav-section">Finanzas</div>
+    <div class="nav-item" id="nav-finanzas" onclick="navTo('finanzas')">
+      <span class="nav-icon">◎</span> Gastos e ingresos
+    </div>
+    <div class="nav-section">Datos</div>
+    <div class="nav-item" id="nav-config" onclick="navTo('config')">
+      <span class="nav-icon">◇</span> Configuración
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main">
+
+    <!-- ══ INICIO ══════════════════════════════════ -->
+    <div class="page active" id="page-inicio">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Resumen</div>
+          <div class="page-sub" id="hoy-date">cargando...</div>
+        </div>
+      </div>
+
+      <div class="grid4" id="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">En fermentación</div>
+          <div class="stat-val" id="stat-ferm">—<span class="stat-unit">lts</span></div>
+          <div class="stat-note" id="stat-ferm-note">lotes activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Producto listo</div>
+          <div class="stat-val" id="stat-prod">—<span class="stat-unit">lts</span></div>
+          <div class="stat-note">disponible para venta</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Insumos críticos</div>
+          <div class="stat-val" id="stat-crit">—</div>
+          <div class="stat-note" id="stat-crit-note">por debajo del mínimo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Balance del mes</div>
+          <div class="stat-val" id="stat-balance">—</div>
+          <div class="stat-note" id="stat-balance-note">ingresos − gastos</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Producción activa <span class="card-link" onclick="navTo('produccion')">ver todo →</span></div>
+          <div id="home-prod-list"><div class="empty"><div class="empty-icon">⚗</div><div class="empty-text">Sin lotes activos</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Stock crítico <span class="card-link" onclick="navTo('inventario')">ver inventario →</span></div>
+          <div id="home-stock-list"><div class="empty"><div class="empty-icon">▦</div><div class="empty-text">Todo en orden</div></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Últimos movimientos</div>
+        <div id="home-movs"></div>
+      </div>
+    </div>
+
+    <!-- ══ PRODUCCIÓN ═══════════════════════════════ -->
+    <div class="page" id="page-produccion">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Producción</div>
+          <div class="page-sub">lotes activos e historial</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-prod')">⚗ Nuevo lote</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="prodTab(this,'activos')">Activos</div>
+        <div class="tab" onclick="prodTab(this,'listos')">Listos para envasar</div>
+        <div class="tab" onclick="prodTab(this,'historial')">Historial</div>
+      </div>
+      <div id="prod-activos"><div class="card"><div id="prod-list-activos"></div></div></div>
+      <div id="prod-listos" style="display:none"><div class="card"><div id="prod-list-listos"></div></div></div>
+      <div id="prod-historial" style="display:none"><div class="card"><div id="prod-list-historial"></div></div></div>
+    </div>
+
+    <!-- ══ INVENTARIO ═══════════════════════════════ -->
+    <div class="page" id="page-inventario">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Inventario</div>
+          <div class="page-sub">insumos y producto terminado</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-insumo')">+ Ingresar insumo</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="invTab(this,'insumos')">Insumos</div>
+        <div class="tab" onclick="invTab(this,'producto')">Producto terminado</div>
+        <div class="tab" onclick="invTab(this,'movimientos')">Historial de movimientos</div>
+      </div>
+      <div id="inv-insumos"><div class="card"><div id="inv-list-insumos"></div></div></div>
+      <div id="inv-producto" style="display:none"><div class="card"><div id="inv-list-producto"></div></div></div>
+      <div id="inv-movimientos" style="display:none"><div class="card"><div id="inv-list-movimientos"></div></div></div>
+    </div>
+
+    <!-- ══ RECETAS ══════════════════════════════════ -->
+    <div class="page" id="page-recetas">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Recetas</div>
+          <div class="page-sub">base de conocimiento de la fábrica</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-receta')">+ Nueva receta</button>
+      </div>
+      <div class="grid3" id="recetas-grid"></div>
+    </div>
+
+    <!-- ══ FINANZAS ═════════════════════════════════ -->
+    <div class="page" id="page-finanzas">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Gastos e ingresos</div>
+          <div class="page-sub" id="fin-periodo">este mes</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modal-gasto')">+ Gasto</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-ingreso')">+ Ingreso / Venta</button>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="stat-card">
+          <div class="stat-label">Ingresos del mes</div>
+          <div class="stat-val stat-ok" id="fin-ingresos">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Gastos del mes</div>
+          <div class="stat-val stat-danger" id="fin-gastos">$0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Movimientos</div>
+        <div id="fin-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ CONFIG ════════════════════════════════════ -->
+    <div class="page" id="page-config">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Configuración</div>
+          <div class="page-sub">datos base del sistema</div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Fermentadores</div>
+          <div id="ferm-list"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openModal('modal-ferm')">+ Agregar fermentador</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Tipos de insumo</div>
+          <div id="tipo-list"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openModal('modal-tipo')">+ Agregar tipo</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Exportar / Importar datos</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="exportDB()">↓ Descargar backup</button>
+          <label class="btn btn-ghost" style="cursor:pointer;">↑ Importar backup<input type="file" accept=".json" onchange="importDB(this)"></label>
+        </div>
+        <div class="form-hint" style="margin-top:8px;">Los datos se guardan en este navegador. Hacé backup regularmente para no perderlos.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ BOTTOM NAV MOBILE ════════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="bnav-items">
+    <div class="bnav-item active" id="bnav-inicio" onclick="navTo('inicio')"><span class="bnav-icon">◈</span>Inicio</div>
+    <div class="bnav-item" id="bnav-produccion" onclick="navTo('produccion')"><span class="bnav-icon">⚗</span>Prod.</div>
+    <div class="bnav-item" id="bnav-inventario" onclick="navTo('inventario')"><span class="bnav-icon">▦</span>Stock</div>
+    <div class="bnav-item" id="bnav-recetas" onclick="navTo('recetas')"><span class="bnav-icon">✦</span>Recetas</div>
+    <div class="bnav-item" id="bnav-finanzas" onclick="navTo('finanzas')"><span class="bnav-icon">◎</span>Finanzas</div>
+  </div>
+</nav>
+
+<!-- ══ TOAST ═════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════════ -->
+
+<!-- QUICK ADD -->
+<div class="modal-ov" id="modal-qa">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-hd">
+      <div class="modal-title">¿Qué querés agregar?</div>
+      <button class="modal-close" onclick="closeModal('modal-qa')">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-insumo')">
+        <div class="qa-icon">📦</div>
+        <div><div class="qa-title">Insumo comprado</div><div class="qa-sub">Malta, lúpulo, levadura, botellas...</div></div>
+      </div>
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-prod')">
+        <div class="qa-icon">⚗</div>
+        <div><div class="qa-title">Iniciar producción</div><div class="qa-sub">Elegís receta y cantidad, ajusta stock solo</div></div>
+      </div>
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-envasar')">
+        <div class="qa-icon">🍺</div>
+        <div><div class="qa-title">Envasar lote</div><div class="qa-sub">Convertir fermentado en barriles o latas</div></div>
+      </div>
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-ingreso')">
+        <div class="qa-icon">💰</div>
+        <div><div class="qa-title">Registrar venta</div><div class="qa-sub">Ingreso con producto y cantidad</div></div>
+      </div>
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-gasto')">
+        <div class="qa-icon">📋</div>
+        <div><div class="qa-title">Registrar gasto</div><div class="qa-sub">Energía, servicios, compras...</div></div>
+      </div>
+      <div class="qa-option" onclick="closeModal('modal-qa');openModal('modal-receta')">
+        <div class="qa-icon">📗</div>
+        <div><div class="qa-title">Nueva receta</div><div class="qa-sub">Cargá ingredientes y proporciones</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSUMO -->
+<div class="modal-ov" id="modal-insumo">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Ingresar insumo</div>
+      <button class="modal-close" onclick="closeModal('modal-insumo')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Insumo</label>
+          <input class="form-input" id="ins-nombre" placeholder="Ej: Malta Pilsen">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="ins-tipo">
+            <option value="">Seleccionar...</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="form-group">
+          <label class="form-label">Cantidad</label>
+          <input class="form-input" id="ins-cantidad" type="number" min="0" step="0.1" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unidad</label>
+          <select class="form-select" id="ins-unidad">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="l">litros</option>
+            <option value="ml">ml</option>
+            <option value="un">unidades</option>
+            <option value="sobres">sobres</option>
+            <option value="cajas">cajas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio total ($)</label>
+          <input class="form-input" id="ins-precio" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Fecha de compra</label>
+          <input class="form-input" id="ins-fecha" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock mínimo (alerta)</label>
+          <input class="form-input" id="ins-minimo" type="number" min="0" step="0.1" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Proveedor (opcional)</label>
+        <input class="form-input" id="ins-proveedor" placeholder="Nombre del proveedor">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adjuntar factura (opcional)</label>
+        <label class="file-label"><span>📎</span><span id="ins-file-name">Seleccionar archivo...</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,'ins-file-name','ins-file-data')"><input type="hidden" id="ins-file-data"></label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="ins-notas" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-insumo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveInsumo()">Guardar insumo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PRODUCCIÓN -->
+<div class="modal-ov" id="modal-prod">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Iniciar producción</div>
+      <button class="modal-close" onclick="closeModal('modal-prod')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Receta</label>
+        <select class="form-select" id="prod-receta" onchange="loadRecetaInfo()">
+          <option value="">Seleccionar receta...</option>
+        </select>
+      </div>
+      <div id="prod-receta-info" style="display:none">
+        <div class="alert" id="prod-alert-ing">Cargando ingredientes...</div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Cantidad a producir (litros)</label>
+          <input class="form-input" id="prod-litros" type="number" min="1" placeholder="Ej: 200" oninput="calcIngNeeded()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fermentador</label>
+          <select class="form-select" id="prod-ferm">
+            <option value="">Seleccionar...</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Fecha de inicio</label>
+          <input class="form-input" id="prod-fecha" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Días estimados</label>
+          <input class="form-input" id="prod-dias" type="number" min="1" placeholder="28">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="prod-notas" placeholder="Observaciones del lote..."></textarea>
+      </div>
+      <div id="prod-ing-check"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-prod')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveLote()">Iniciar lote</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ENVASAR -->
+<div class="modal-ov" id="modal-envasar">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Envasar lote</div>
+      <button class="modal-close" onclick="closeModal('modal-envasar')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Lote a envasar</label>
+        <select class="form-select" id="env-lote">
+          <option value="">Seleccionar lote listo...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de envase</label>
+        <select class="form-select" id="env-tipo">
+          <option value="barril">Barriles</option>
+          <option value="lata">Latas</option>
+          <option value="botella">Botellas</option>
+          <option value="litros">Litros sueltos</option>
+        </select>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Cantidad envasada</label>
+          <input class="form-input" id="env-cantidad" type="number" min="0" step="0.1" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Merma (litros)</label>
+          <input class="form-input" id="env-merma" type="number" min="0" step="0.1" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha de envasado</label>
+        <input class="form-input" id="env-fecha" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="env-notas" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-envasar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEnvasado()">Registrar envasado</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RECETA -->
+<div class="modal-ov" id="modal-receta">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-hd">
+      <div class="modal-title">Nueva receta</div>
+      <button class="modal-close" onclick="closeModal('modal-receta')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Nombre de la receta</label>
+          <input class="form-input" id="rec-nombre" placeholder="Ej: IPA Patagónica">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estilo</label>
+          <input class="form-input" id="rec-estilo" placeholder="Ej: IPA, Stout, Lager...">
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Base de litros (receta para)</label>
+          <input class="form-input" id="rec-base" type="number" min="1" placeholder="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Días de fermentación estimados</label>
+          <input class="form-input" id="rec-dias" type="number" min="1" placeholder="28">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-textarea" id="rec-desc" placeholder="Notas sobre la receta..."></textarea>
+      </div>
+      <div class="form-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <label class="form-label" style="margin-bottom:0">Ingredientes</label>
+          <button class="btn btn-ghost btn-sm" onclick="addIngRow()">+ agregar</button>
+        </div>
+        <div id="ing-rows" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="ing-row">
+            <div class="form-group"><label class="form-label">Insumo</label><input class="form-input ing-nom" placeholder="Malta Pilsen"></div>
+            <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input ing-cant" type="number" min="0" step="0.01" placeholder="0"></div>
+            <div class="form-group"><label class="form-label">Unidad</label>
+              <select class="form-select ing-uni"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>un</option><option>sobres</option></select>
+            </div>
+            <button class="ing-del" onclick="delIngRow(this)" style="margin-top:22px">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-receta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveReceta()">Guardar receta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GASTO -->
+<div class="modal-ov" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Registrar gasto</div>
+      <button class="modal-close" onclick="closeModal('modal-gasto')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-input" id="gasto-desc" placeholder="Ej: Energía eléctrica abril">
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Monto ($)</label>
+          <input class="form-input" id="gasto-monto" type="number" min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" id="gasto-fecha" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-select" id="gasto-cat">
+          <option value="insumos">Insumos</option>
+          <option value="energia">Energía / servicios</option>
+          <option value="equipamiento">Equipamiento</option>
+          <option value="logistica">Logística</option>
+          <option value="otros">Otros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adjuntar factura (opcional)</label>
+        <label class="file-label"><span>📎</span><span id="gasto-file-name">Seleccionar archivo...</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,'gasto-file-name','gasto-file-data')"><input type="hidden" id="gasto-file-data"></label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="gasto-notas" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gasto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGasto()">Guardar gasto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INGRESO -->
+<div class="modal-ov" id="modal-ingreso">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Registrar venta / ingreso</div>
+      <button class="modal-close" onclick="closeModal('modal-ingreso')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-input" id="ing-desc" placeholder="Ej: Venta 10 barriles — Bar La Ruta">
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Monto ($)</label>
+          <input class="form-input" id="ing-monto" type="number" min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" id="ing-fecha" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="ing-tipo">
+          <option value="venta_barril">Venta barriles</option>
+          <option value="venta_lata">Venta latas</option>
+          <option value="venta_botella">Venta botellas</option>
+          <option value="otro">Otro ingreso</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Producto vendido (lote, opcional)</label>
+        <select class="form-select" id="ing-lote">
+          <option value="">Sin especificar</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adjuntar factura (opcional)</label>
+        <label class="file-label"><span>📎</span><span id="ing-file-name">Seleccionar archivo...</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,'ing-file-name','ing-file-data')"><input type="hidden" id="ing-file-data"></label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="ing-notas" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ingreso')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveIngreso()">Guardar ingreso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FERMENTADOR -->
+<div class="modal-ov" id="modal-ferm">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hd">
+      <div class="modal-title">Agregar fermentador</div>
+      <button class="modal-close" onclick="closeModal('modal-ferm')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="ferm-nombre" placeholder="Ej: Fermentador A">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Capacidad (litros)</label>
+        <input class="form-input" id="ferm-cap" type="number" min="1" placeholder="300">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ferm')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFerm()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TIPO INSUMO -->
+<div class="modal-ov" id="modal-tipo">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hd">
+      <div class="modal-title">Agregar tipo de insumo</div>
+      <button class="modal-close" onclick="closeModal('modal-tipo')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nombre del tipo</label>
+        <input class="form-input" id="tipo-nombre" placeholder="Ej: Malta, Lúpulo, Levadura...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-tipo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTipo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE RECETA -->
+<div class="modal-ov" id="modal-rec-detail">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-hd">
+      <div class="modal-title" id="rd-nombre">—</div>
+      <button class="modal-close" onclick="closeModal('modal-rec-detail')">×</button>
+    </div>
+    <div id="rd-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="rd-del-btn">Eliminar receta</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-rec-detail')">Cerrar</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-rec-detail');openModal('modal-prod')">Iniciar producción</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ACTUALIZAR ESTADO LOTE -->
+<div class="modal-ov" id="modal-estado">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hd">
+      <div class="modal-title">Actualizar lote</div>
+      <button class="modal-close" onclick="closeModal('modal-estado')">×</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="est-lote-id">
+      <div class="form-group">
+        <label class="form-label">Nuevo estado</label>
+        <select class="form-select" id="est-estado">
+          <option value="fermentacion">Fermentación primaria</option>
+          <option value="maduracion">Maduración / secundaria</option>
+          <option value="listo">Listo para envasar</option>
+          <option value="finalizado">Finalizado / envasado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nota</label>
+        <textarea class="form-textarea" id="est-nota" placeholder="Densidad, temperatura, observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-estado')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="del-lote-btn">Eliminar lote</button>
+      <button class="btn btn-primary" onclick="saveEstado()">Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT — FULL DATABASE & LOGIC
+═══════════════════════════════════════════════════ -->
+<script>
+// ── DB: LocalStorage as JSON store ────────────────
+const DB_KEY = '259brew_db';
+
+function loadDB(){
+  try{return JSON.parse(localStorage.getItem(DB_KEY))||initDB();}
+  catch{return initDB();}
+}
+
+function initDB(){
+  return {
+    fermentadores:[
+      {id:1,nombre:'Fermentador A',capacidad:300},
+      {id:2,nombre:'Fermentador B',capacidad:200},
+    ],
+    tipos:[
+      {id:1,nombre:'Malta'},
+      {id:2,nombre:'Lúpulo'},
+      {id:3,nombre:'Levadura'},
+      {id:4,nombre:'Adjuntos'},
+      {id:5,nombre:'Envases'},
+    ],
+    insumos:[],      // {id,nombre,tipo_id,cantidad,unidad,precio,precio_unit,fecha,proveedor,minimo,notas,file_data,file_name}
+    recetas:[],      // {id,nombre,estilo,base_litros,dias,descripcion,ingredientes:[{nombre,cantidad,unidad}]}
+    lotes:[],        // {id,receta_id,receta_nombre,litros,ferm_id,ferm_nombre,fecha_inicio,dias_est,estado,notas,log:[]}
+    productos:[],    // {id,lote_id,lote_nombre,tipo,cantidad,unidad,fecha,notas}
+    movimientos:[],  // {id,tipo,descripcion,referencia_id,cantidad,unidad,fecha}
+    finanzas:[],     // {id,tipo:'gasto'|'ingreso',descripcion,monto,fecha,categoria,lote_id,notas,file_data,file_name}
+    _seq:{ferm:3,tipo:6,ins:1,rec:1,lote:1,prod:1,mov:1,fin:1}
+  };
+}
+
+function saveDB(db){localStorage.setItem(DB_KEY,JSON.stringify(db));}
+
+function nextId(db,key){
+  const id=db._seq[key]++;
+  saveDB(db);return id;
+}
+
+let db = loadDB();
+
+// ── NAVIGATION ─────────────────────────────────────
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const nav=document.getElementById('nav-'+page);
+  if(nav) nav.classList.add('active');
+  const bnav=document.getElementById('bnav-'+page);
+  if(bnav) bnav.classList.add('active');
+  renderPage(page);
+  window.scrollTo(0,0);
+}
+
+function renderPage(p){
+  if(p==='inicio') renderInicio();
+  if(p==='produccion') renderProduccion();
+  if(p==='inventario') renderInventario();
+  if(p==='recetas') renderRecetas();
+  if(p==='finanzas') renderFinanzas();
+  if(p==='config') renderConfig();
+}
+
+// ── MODALS ──────────────────────────────────────────
+function openModal(id){
+  db=loadDB();
+  if(id==='modal-insumo') fillTiposSelect('ins-tipo');
+  if(id==='modal-prod'){fillRecetasSelect();fillFermsSelect();document.getElementById('prod-fecha').value=today();}
+  if(id==='modal-envasar'){fillLotesListosSelect();document.getElementById('env-fecha').value=today();}
+  if(id==='modal-ingreso'){document.getElementById('ing-fecha').value=today();fillLotesIngSelect();}
+  if(id==='modal-gasto') document.getElementById('gasto-fecha').value=today();
+  document.getElementById(id).classList.add('open');
+}
+function openQA(){openModal('modal-qa');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── HELPERS ─────────────────────────────────────────
+function today(){return new Date().toISOString().split('T')[0];}
+function fmtDate(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[1]?p[2]+'/'+p[1]+'/'+p[0]:d;}
+function fmtMoney(n){return'$'+Number(n).toLocaleString('es-AR');}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function handleFile(inp,nameId,dataId){
+  const f=inp.files[0];
+  if(!f)return;
+  document.getElementById(nameId).textContent=f.name;
+  const reader=new FileReader();
+  reader.onload=e=>document.getElementById(dataId).value=e.target.result;
+  reader.readAsDataURL(f);
+}
+
+function estBadge(e){
+  const map={
+    fermentacion:'<span class="badge badge-teal"><span class="dot dot-teal"></span>Fermentación</span>',
+    maduracion:'<span class="badge badge-amber"><span class="dot dot-amber"></span>Maduración</span>',
+    listo:'<span class="badge badge-gold"><span class="dot dot-amber"></span>Listo para envasar</span>',
+    finalizado:'<span class="badge badge-green"><span class="dot dot-green"></span>Finalizado</span>',
+  };
+  return map[e]||'<span class="badge badge-gray">'+e+'</span>';
+}
+
+// ── SELECTS ─────────────────────────────────────────
+function fillTiposSelect(id){
+  const sel=document.getElementById(id);
+  sel.innerHTML='<option value="">Seleccionar...</option>';
+  db.tipos.forEach(t=>sel.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`);
+}
+function fillRecetasSelect(){
+  const sel=document.getElementById('prod-receta');
+  sel.innerHTML='<option value="">Seleccionar receta...</option>';
+  db.recetas.forEach(r=>sel.innerHTML+=`<option value="${r.id}">${r.nombre}</option>`);
+}
+function fillFermsSelect(){
+  const sel=document.getElementById('prod-ferm');
+  sel.innerHTML='<option value="">Seleccionar...</option>';
+  db.fermentadores.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.nombre} (${f.capacidad}L)</option>`);
+}
+function fillLotesListosSelect(){
+  const sel=document.getElementById('env-lote');
+  sel.innerHTML='<option value="">Seleccionar lote listo...</option>';
+  db.lotes.filter(l=>l.estado==='listo').forEach(l=>sel.innerHTML+=`<option value="${l.id}">#${l.id} ${l.receta_nombre} — ${l.litros}L</option>`);
+}
+function fillLotesIngSelect(){
+  const sel=document.getElementById('ing-lote');
+  sel.innerHTML='<option value="">Sin especificar</option>';
+  db.lotes.forEach(l=>sel.innerHTML+=`<option value="${l.id}">#${l.id} ${l.receta_nombre}</option>`);
+}
+
+// ── RECETA FORM ──────────────────────────────────────
+function addIngRow(){
+  const d=document.getElementById('ing-rows');
+  const row=document.createElement('div');row.className='ing-row';
+  row.innerHTML=`<div class="form-group"><label class="form-label">Insumo</label><input class="form-input ing-nom" placeholder="Malta Pilsen"></div><div class="form-group"><label class="form-label">Cantidad</label><input class="form-input ing-cant" type="number" min="0" step="0.01" placeholder="0"></div><div class="form-group"><label class="form-label">Unidad</label><select class="form-select ing-uni"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>un</option><option>sobres</option></select></div><button class="ing-del" onclick="delIngRow(this)" style="margin-top:22px">✕</button>`;
+  d.appendChild(row);
+}
+function delIngRow(btn){btn.parentElement.remove();}
+
+// ── LOAD RECETA INFO FOR PROD MODAL ─────────────────
+function loadRecetaInfo(){
+  const id=parseInt(document.getElementById('prod-receta').value);
+  const rec=db.recetas.find(r=>r.id===id);
+  const div=document.getElementById('prod-receta-info');
+  if(!rec){div.style.display='none';return;}
+  div.style.display='block';
+  document.getElementById('prod-dias').value=rec.dias||28;
+  calcIngNeeded();
+}
+
+function calcIngNeeded(){
+  const id=parseInt(document.getElementById('prod-receta').value);
+  const rec=db.recetas.find(r=>r.id===id);
+  if(!rec)return;
+  const lts=parseFloat(document.getElementById('prod-litros').value)||0;
+  if(!lts||!rec.base_litros)return;
+  const factor=lts/rec.base_litros;
+  const div=document.getElementById('prod-ing-check');
+  if(!rec.ingredientes||!rec.ingredientes.length){div.innerHTML='';return;}
+  let html='<div class="card-title" style="margin-top:8px">Verificación de ingredientes</div>';
+  let ok=true;
+  rec.ingredientes.forEach(ing=>{
+    const need=ing.cantidad*factor;
+    const stock=db.insumos.filter(i=>i.nombre.toLowerCase()===ing.nombre.toLowerCase()).reduce((s,i)=>s+parseFloat(i.cantidad||0),0);
+    const enough=stock>=need;
+    if(!enough)ok=false;
+    html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--font-b);font-size:14px;">
+      <span style="color:var(--cream)">${ing.nombre}</span>
+      <span style="${enough?'color:var(--green2)':'color:var(--red2)'}">necesitás ${need.toFixed(1)} ${ing.unidad} — stock: ${stock.toFixed(1)}</span>
+    </div>`;
+  });
+  if(!ok) html='<div class="alert">⚠ Algunos insumos no tienen stock suficiente. Podés igualmente iniciar el lote y ajustar el inventario.</div>'+html;
+  div.innerHTML=html;
+}
+
+// ── SAVE FUNCTIONS ───────────────────────────────────
+
+function saveInsumo(){
+  const nombre=document.getElementById('ins-nombre').value.trim();
+  const cantidad=parseFloat(document.getElementById('ins-cantidad').value);
+  if(!nombre||!cantidad){showToast('Completá nombre y cantidad');return;}
+  db=loadDB();
+  const precio=parseFloat(document.getElementById('ins-precio').value)||0;
+  const ins={
+    id:nextId(db,'ins'),
+    nombre,
+    tipo_id:parseInt(document.getElementById('ins-tipo').value)||null,
+    cantidad,
+    unidad:document.getElementById('ins-unidad').value,
+    precio,
+    precio_unit:cantidad?precio/cantidad:0,
+    fecha:document.getElementById('ins-fecha').value||today(),
+    proveedor:document.getElementById('ins-proveedor').value.trim(),
+    minimo:parseFloat(document.getElementById('ins-minimo').value)||0,
+    notas:document.getElementById('ins-notas').value.trim(),
+    file_data:document.getElementById('ins-file-data').value,
+    file_name:document.getElementById('ins-file-name').textContent,
+  };
+  db.insumos.push(ins);
+  // movimiento
+  db.movimientos.push({id:nextId(db,'mov'),tipo:'entrada',descripcion:'Compra: '+nombre,referencia_id:ins.id,cantidad,unidad:ins.unidad,fecha:ins.fecha});
+  saveDB(db);
+  closeModal('modal-insumo');
+  showToast('✓ Insumo guardado');
+  // reset
+  ['ins-nombre','ins-cantidad','ins-precio','ins-minimo','ins-proveedor','ins-notas','ins-file-data'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ins-file-name').textContent='Seleccionar archivo...';
+  renderPage(getCurrentPage());
+}
+
+function saveLote(){
+  const rec_id=parseInt(document.getElementById('prod-receta').value);
+  const rec=db.recetas.find(r=>r.id===rec_id);
+  const litros=parseFloat(document.getElementById('prod-litros').value);
+  const ferm_id=parseInt(document.getElementById('prod-ferm').value);
+  const ferm=db.fermentadores.find(f=>f.id===ferm_id);
+  if(!rec||!litros){showToast('Completá receta y litros');return;}
+  db=loadDB();
+  // descontar insumos si alcanza
+  if(rec.ingredientes&&rec.base_litros){
+    const factor=litros/rec.base_litros;
+    rec.ingredientes.forEach(ing=>{
+      const need=ing.cantidad*factor;
+      let remaining=need;
+      db.insumos.filter(i=>i.nombre.toLowerCase()===ing.nombre.toLowerCase()).forEach(i=>{
+        if(remaining<=0)return;
+        const use=Math.min(i.cantidad,remaining);
+        i.cantidad=Math.max(0,i.cantidad-use);
+        remaining-=use;
+      });
+    });
+  }
+  const lote={
+    id:nextId(db,'lote'),
+    receta_id:rec_id,
+    receta_nombre:rec.nombre,
+    litros,
+    ferm_id:ferm_id||null,
+    ferm_nombre:ferm?ferm.nombre:'—',
+    fecha_inicio:document.getElementById('prod-fecha').value||today(),
+    dias_est:parseInt(document.getElementById('prod-dias').value)||28,
+    estado:'fermentacion',
+    notas:document.getElementById('prod-notas').value.trim(),
+    log:[{fecha:today(),estado:'fermentacion',nota:'Inicio de lote'}]
+  };
+  db.lotes.push(lote);
+  db.movimientos.push({id:nextId(db,'mov'),tipo:'produccion',descripcion:'Lote iniciado: '+rec.nombre,referencia_id:lote.id,cantidad:litros,unidad:'lts',fecha:lote.fecha_inicio});
+  saveDB(db);
+  closeModal('modal-prod');
+  showToast('✓ Lote #'+lote.id+' iniciado — stock descontado');
+  ['prod-litros','prod-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('prod-receta').value='';
+  document.getElementById('prod-ing-check').innerHTML='';
+  document.getElementById('prod-receta-info').style.display='none';
+  renderPage(getCurrentPage());
+}
+
+function saveEnvasado(){
+  const lote_id=parseInt(document.getElementById('env-lote').value);
+  const lote=db.lotes.find(l=>l.id===lote_id);
+  const cantidad=parseFloat(document.getElementById('env-cantidad').value);
+  const tipo=document.getElementById('env-tipo').value;
+  if(!lote||!cantidad){showToast('Completá lote y cantidad');return;}
+  db=loadDB();
+  const prod={
+    id:nextId(db,'prod'),
+    lote_id,
+    lote_nombre:lote.receta_nombre,
+    tipo,
+    cantidad,
+    unidad:tipo==='litros'?'litros':tipo==='barril'?'barriles':tipo==='lata'?'latas':'botellas',
+    merma:parseFloat(document.getElementById('env-merma').value)||0,
+    fecha:document.getElementById('env-fecha').value||today(),
+    notas:document.getElementById('env-notas').value.trim(),
+    vendido:0,
+  };
+  db.productos.push(prod);
+  const loteidx=db.lotes.findIndex(l=>l.id===lote_id);
+  if(loteidx>=0){
+    db.lotes[loteidx].estado='finalizado';
+    db.lotes[loteidx].log.push({fecha:today(),estado:'finalizado',nota:'Envasado: '+cantidad+' '+prod.unidad});
+  }
+  db.movimientos.push({id:nextId(db,'mov'),tipo:'envasado',descripcion:'Envasado: '+lote.receta_nombre+' → '+cantidad+' '+prod.unidad,referencia_id:prod.id,cantidad,unidad:prod.unidad,fecha:prod.fecha});
+  saveDB(db);
+  closeModal('modal-envasar');
+  showToast('✓ Envasado registrado');
+  renderPage(getCurrentPage());
+}
+
+function saveReceta(){
+  const nombre=document.getElementById('rec-nombre').value.trim();
+  const base=parseFloat(document.getElementById('rec-base').value)||100;
+  if(!nombre){showToast('Ingresá un nombre para la receta');return;}
+  db=loadDB();
+  const rows=document.querySelectorAll('#ing-rows .ing-row');
+  const ingredientes=[];
+  rows.forEach(r=>{
+    const nom=r.querySelector('.ing-nom').value.trim();
+    const cant=parseFloat(r.querySelector('.ing-cant').value);
+    const uni=r.querySelector('.ing-uni').value;
+    if(nom&&cant) ingredientes.push({nombre:nom,cantidad:cant,unidad:uni});
+  });
+  const rec={
+    id:nextId(db,'rec'),
+    nombre,
+    estilo:document.getElementById('rec-estilo').value.trim(),
+    base_litros:base,
+    dias:parseInt(document.getElementById('rec-dias').value)||28,
+    descripcion:document.getElementById('rec-desc').value.trim(),
+    ingredientes,
+  };
+  db.recetas.push(rec);
+  saveDB(db);
+  closeModal('modal-receta');
+  showToast('✓ Receta guardada');
+  renderPage(getCurrentPage());
+}
+
+function saveGasto(){
+  const desc=document.getElementById('gasto-desc').value.trim();
+  const monto=parseFloat(document.getElementById('gasto-monto').value);
+  if(!desc||!monto){showToast('Completá descripción y monto');return;}
+  db=loadDB();
+  db.finanzas.push({
+    id:nextId(db,'fin'),tipo:'gasto',descripcion:desc,monto,
+    fecha:document.getElementById('gasto-fecha').value||today(),
+    categoria:document.getElementById('gasto-cat').value,
+    notas:document.getElementById('gasto-notas').value.trim(),
+    file_data:document.getElementById('gasto-file-data').value,
+    file_name:document.getElementById('gasto-file-name').textContent,
+  });
+  saveDB(db);closeModal('modal-gasto');showToast('✓ Gasto registrado');
+  renderPage(getCurrentPage());
+}
+
+function saveIngreso(){
+  const desc=document.getElementById('ing-desc').value.trim();
+  const monto=parseFloat(document.getElementById('ing-monto').value);
+  if(!desc||!monto){showToast('Completá descripción y monto');return;}
+  db=loadDB();
+  db.finanzas.push({
+    id:nextId(db,'fin'),tipo:'ingreso',descripcion:desc,monto,
+    fecha:document.getElementById('ing-fecha').value||today(),
+    categoria:document.getElementById('ing-tipo').value,
+    lote_id:parseInt(document.getElementById('ing-lote').value)||null,
+    notas:document.getElementById('ing-notas').value.trim(),
+    file_data:document.getElementById('ing-file-data').value,
+    file_name:document.getElementById('ing-file-name').textContent,
+  });
+  saveDB(db);closeModal('modal-ingreso');showToast('✓ Ingreso registrado');
+  renderPage(getCurrentPage());
+}
+
+function saveFerm(){
+  const nombre=document.getElementById('ferm-nombre').value.trim();
+  const cap=parseFloat(document.getElementById('ferm-cap').value);
+  if(!nombre){showToast('Ingresá un nombre');return;}
+  db=loadDB();
+  db.fermentadores.push({id:nextId(db,'ferm'),nombre,capacidad:cap||0});
+  saveDB(db);closeModal('modal-ferm');showToast('✓ Fermentador agregado');renderPage('config');
+}
+
+function saveTipo(){
+  const nombre=document.getElementById('tipo-nombre').value.trim();
+  if(!nombre){showToast('Ingresá un nombre');return;}
+  db=loadDB();
+  db.tipos.push({id:nextId(db,'tipo'),nombre});
+  saveDB(db);closeModal('modal-tipo');showToast('✓ Tipo agregado');renderPage('config');
+}
+
+function saveEstado(){
+  const id=parseInt(document.getElementById('est-lote-id').value);
+  const estado=document.getElementById('est-estado').value;
+  const nota=document.getElementById('est-nota').value.trim();
+  db=loadDB();
+  const idx=db.lotes.findIndex(l=>l.id===id);
+  if(idx<0)return;
+  db.lotes[idx].estado=estado;
+  db.lotes[idx].log.push({fecha:today(),estado,nota});
+  saveDB(db);closeModal('modal-estado');showToast('✓ Estado actualizado');
+  renderPage('produccion');
+}
+
+// ── PROD TAB ─────────────────────────────────────────
+let prodTabActive='activos';
+function prodTab(el,name){
+  document.querySelectorAll('#page-produccion .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['activos','listos','historial'].forEach(n=>{
+    document.getElementById('prod-'+n).style.display=n===name?'block':'none';
+  });
+  prodTabActive=name;
+  renderProduccion();
+}
+
+// ── INV TAB ──────────────────────────────────────────
+let invTabActive='insumos';
+function invTab(el,name){
+  document.querySelectorAll('#page-inventario .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['insumos','producto','movimientos'].forEach(n=>{
+    document.getElementById('inv-'+n).style.display=n===name?'block':'none';
+  });
+  invTabActive=name;
+  renderInventario();
+}
+
+// ── CURRENT PAGE ─────────────────────────────────────
+function getCurrentPage(){
+  const p=document.querySelector('.page.active');
+  return p?p.id.replace('page-',''):'inicio';
+}
+
+// ── RENDERS ──────────────────────────────────────────
+
+function renderInicio(){
+  db=loadDB();
+  // date
+  const dn=new Date();
+  document.getElementById('hoy-date').textContent=dn.toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // stats
+  const activos=db.lotes.filter(l=>l.estado!=='finalizado');
+  const fermLts=activos.reduce((s,l)=>s+l.litros,0);
+  document.getElementById('stat-ferm').innerHTML=fermLts+'<span class="stat-unit">lts</span>';
+  document.getElementById('stat-ferm-note').textContent=activos.length+' lote'+(activos.length===1?'':'s')+' activo'+(activos.length===1?'':'s');
+
+  const prodLts=db.productos.reduce((s,p)=>s+(p.tipo==='litros'?p.cantidad:0),0);
+  const prodTotal=db.productos.length;
+  document.getElementById('stat-prod').innerHTML=prodTotal+'<span class="stat-unit">lotes env.</span>';
+
+  const crit=db.insumos.filter(i=>i.minimo>0&&i.cantidad<i.minimo);
+  const sc=document.getElementById('stat-crit');
+  sc.innerHTML=crit.length;
+  sc.className='stat-val '+(crit.length>0?'stat-warn':'stat-ok');
+  document.getElementById('stat-crit-note').textContent=crit.length===0?'todo en orden':'por debajo del mínimo';
+
+  const mes=new Date().getMonth();const ano=new Date().getFullYear();
+  const finMes=db.finanzas.filter(f=>{const d=new Date(f.fecha);return d.getMonth()===mes&&d.getFullYear()===ano;});
+  const ing=finMes.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
+  const gas=finMes.filter(f=>f.tipo==='gasto').reduce((s,f)=>s+f.monto,0);
+  const bal=ing-gas;
+  const sb=document.getElementById('stat-balance');
+  sb.textContent=fmtMoney(bal);
+  sb.className='stat-val '+(bal>=0?'stat-ok':'stat-danger');
+
+  // prod list
+  const pl=document.getElementById('home-prod-list');
+  if(!activos.length){pl.innerHTML='<div class="empty"><div class="empty-icon">⚗</div><div class="empty-text">Sin lotes activos</div><div class="empty-sub">Iniciá una producción con el botón + Agregar</div></div>';return;}
+  pl.innerHTML=activos.slice(0,3).map(l=>{
+    const dias=Math.floor((Date.now()-new Date(l.fecha_inicio))/(86400000));
+    const pp=pct(dias,l.dias_est);
+    const col=l.estado==='listo'?'gold':l.estado==='maduracion'?'amber':'teal';
+    return `<div class="proc-item">
+      <div class="proc-hd"><span class="proc-name">${l.receta_nombre}</span>${estBadge(l.estado)}</div>
+      <div class="proc-meta"><span>${l.litros} lts</span><span>${l.ferm_nombre}</span><span>día ${dias} de ${l.dias_est}</span></div>
+      <div class="prog-wrap"><div class="prog-fill prog-${col}" style="width:${Math.min(pp,100)}%"></div></div>
+    </div>`;
+  }).join('');
+
+  // stock crit
+  const sl=document.getElementById('home-stock-list');
+  if(!crit.length){sl.innerHTML='<div class="empty"><div class="empty-icon">✓</div><div class="empty-text" style="color:var(--green2)">Todo en orden</div></div>';
+  }else{
+    sl.innerHTML='<table class="tbl"><thead><tr><th>Insumo</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>'+
+      crit.map(i=>`<tr><td>${i.nombre}</td><td class="num stat-warn">${i.cantidad} ${i.unidad}</td><td class="muted">${i.minimo} ${i.unidad}</td></tr>`).join('')+
+      '</tbody></table>';
+  }
+
+  // movs
+  const mv=document.getElementById('home-movs');
+  const recent=[...db.movimientos].reverse().slice(0,5);
+  if(!recent.length){mv.innerHTML='<div class="empty"><div class="empty-text">Sin movimientos</div></div>';return;}
+  mv.innerHTML='<table class="tbl"><thead><tr><th>Tipo</th><th>Descripción</th><th>Cant.</th><th>Fecha</th></tr></thead><tbody>'+
+    recent.map(m=>{
+      const tmap={entrada:'📦 Entrada',produccion:'⚗ Producción',envasado:'🍺 Envasado',venta:'💰 Venta'};
+      return `<tr><td class="muted">${tmap[m.tipo]||m.tipo}</td><td>${m.descripcion}</td><td>${m.cantidad} ${m.unidad}</td><td class="muted">${m.fecha}</td></tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+function renderProduccion(){
+  db=loadDB();
+  const byState={
+    activos:db.lotes.filter(l=>l.estado==='fermentacion'||l.estado==='maduracion'),
+    listos:db.lotes.filter(l=>l.estado==='listo'),
+    historial:db.lotes.filter(l=>l.estado==='finalizado'),
+  };
+  Object.entries(byState).forEach(([key,lotes])=>{
+    const el=document.getElementById('prod-list-'+key);
+    if(!lotes.length){el.innerHTML='<div class="empty"><div class="empty-icon">⚗</div><div class="empty-text">Sin lotes en esta categoría</div></div>';return;}
+    el.innerHTML=lotes.map(l=>{
+      const dias=Math.floor((Date.now()-new Date(l.fecha_inicio))/(86400000));
+      const pp=Math.min(pct(dias,l.dias_est),100);
+      const col=l.estado==='listo'||l.estado==='finalizado'?'gold':l.estado==='maduracion'?'amber':'teal';
+      return `<div class="proc-item">
+        <div class="proc-hd">
+          <span class="proc-name">Lote #${l.id} — ${l.receta_nombre}</span>
+          ${estBadge(l.estado)}
+        </div>
+        <div class="proc-meta">
+          <span>${l.litros} lts</span>
+          <span>${l.ferm_nombre}</span>
+          <span>inicio: ${l.fecha_inicio}</span>
+          <span>día ${dias} / ${l.dias_est}</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-fill prog-${col}" style="width:${pp}%"></div></div>
+        ${l.notas?'<div class="muted" style="font-family:var(--font-b);font-size:13px;font-style:italic">'+l.notas+'</div>':''}
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="openEditEstado(${l.id})">Actualizar estado</button>
+          ${l.estado==='listo'?'<button class="btn btn-primary btn-sm" onclick="closeModal(\'modal-qa\');openModal(\'modal-envasar\')">Envasar →</button>':''}
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+function openEditEstado(id){
+  db=loadDB();
+  const l=db.lotes.find(x=>x.id===id);
+  if(!l)return;
+  document.getElementById('est-lote-id').value=id;
+  document.getElementById('est-estado').value=l.estado;
+  document.getElementById('est-nota').value='';
+  const delBtn=document.getElementById('del-lote-btn');
+  delBtn.onclick=()=>{
+    if(!confirm('¿Eliminar lote #'+id+'?'))return;
+    db=loadDB();db.lotes=db.lotes.filter(x=>x.id!==id);saveDB(db);
+    closeModal('modal-estado');showToast('Lote eliminado');renderProduccion();
+  };
+  openModal('modal-estado');
+}
+
+function renderInventario(){
+  db=loadDB();
+  // insumos
+  const il=document.getElementById('inv-list-insumos');
+  if(!db.insumos.length){il.innerHTML='<div class="empty"><div class="empty-icon">▦</div><div class="empty-text">Sin insumos cargados</div><div class="empty-sub">Usá + Ingresar insumo para cargar stock</div></div>';}
+  else{
+    // agrupar por nombre
+    const grouped={};
+    db.insumos.forEach(i=>{
+      const k=i.nombre.toLowerCase();
+      if(!grouped[k]) grouped[k]={nombre:i.nombre,unidad:i.unidad,cantidad:0,minimo:i.minimo||0,ultimo:i.fecha,precio_unit:i.precio_unit||0};
+      grouped[k].cantidad+=parseFloat(i.cantidad||0);
+      if(!grouped[k].minimo&&i.minimo) grouped[k].minimo=i.minimo;
+    });
+    const rows=Object.values(grouped);
+    il.innerHTML='<table class="tbl"><thead><tr><th>Insumo</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th><th>Último ingreso</th></tr></thead><tbody>'+
+      rows.map(i=>{
+        const low=i.minimo>0&&i.cantidad<i.minimo;
+        return `<tr>
+          <td style="font-weight:500">${i.nombre}</td>
+          <td><span class="num ${low?'stat-warn':''}">${i.cantidad.toFixed(1)}</span> <span class="muted">${i.unidad}</span></td>
+          <td class="muted">${i.minimo>0?i.minimo+' '+i.unidad:'—'}</td>
+          <td>${low?'<span class="badge badge-amber">Stock bajo</span>':'<span class="badge badge-green">OK</span>'}</td>
+          <td class="muted">${i.ultimo}</td>
+        </tr>`;
+      }).join('')+'</tbody></table>';
+  }
+
+  // producto
+  const pl=document.getElementById('inv-list-producto');
+  if(!db.productos.length){pl.innerHTML='<div class="empty"><div class="empty-icon">🍺</div><div class="empty-text">Sin producto terminado</div><div class="empty-sub">Envasá un lote listo para ver el producto acá</div></div>';}
+  else{
+    pl.innerHTML='<table class="tbl"><thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Merma</th></tr></thead><tbody>'+
+      db.productos.map(p=>`<tr>
+        <td>${p.lote_nombre} <span class="muted">#${p.lote_id}</span></td>
+        <td><span class="badge badge-teal">${p.tipo}</span></td>
+        <td><span class="num">${p.cantidad}</span> <span class="muted">${p.unidad}</span></td>
+        <td class="muted">${p.fecha}</td>
+        <td class="muted">${p.merma>0?p.merma+' lts':'—'}</td>
+      </tr>`).join('')+'</tbody></table>';
+  }
+
+  // movimientos
+  const ml=document.getElementById('inv-list-movimientos');
+  const movs=[...db.movimientos].reverse();
+  if(!movs.length){ml.innerHTML='<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">Sin movimientos</div></div>';}
+  else{
+    const tmap={entrada:'📦 Entrada',produccion:'⚗ Producción',envasado:'🍺 Envasado',venta:'💰 Venta'};
+    ml.innerHTML='<table class="tbl"><thead><tr><th>Tipo</th><th>Descripción</th><th>Cantidad</th><th>Fecha</th></tr></thead><tbody>'+
+      movs.map(m=>`<tr>
+        <td>${tmap[m.tipo]||m.tipo}</td>
+        <td>${m.descripcion}</td>
+        <td>${m.cantidad} ${m.unidad}</td>
+        <td class="muted">${m.fecha}</td>
+      </tr>`).join('')+'</tbody></table>';
+  }
+}
+
+function renderRecetas(){
+  db=loadDB();
+  const g=document.getElementById('recetas-grid');
+  if(!db.recetas.length){
+    g.innerHTML='<div class="card" style="grid-column:1/-1"><div class="empty"><div class="empty-icon">✦</div><div class="empty-text">Sin recetas cargadas</div><div class="empty-sub">Agregá la primera receta de la fábrica</div></div></div>';
+    return;
+  }
+  g.innerHTML=db.recetas.map(r=>{
+    const lotes_activos=db.lotes.filter(l=>l.receta_id===r.id&&l.estado!=='finalizado').length;
+    return `<div class="recipe-card" onclick="openRecetaDetail(${r.id})">
+      <div>
+        <div class="recipe-name">${r.nombre}</div>
+        <div class="recipe-style">${r.estilo||'—'}</div>
+      </div>
+      <div class="recipe-ing">${r.ingredientes&&r.ingredientes.length?r.ingredientes.slice(0,3).map(i=>i.nombre).join(' · ')+(r.ingredientes.length>3?' · ...':''):'Sin ingredientes cargados'}</div>
+      <div class="recipe-footer">
+        <div>
+          ${lotes_activos>0?'<span class="badge badge-teal">'+lotes_activos+' lote activo</span>':'<span class="badge badge-gray">Sin lotes activos</span>'}
+        </div>
+        <div style="font-family:var(--font-b);font-size:13px;color:var(--muted)">base ${r.base_litros||100} lts</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openRecetaDetail(id){
+  db=loadDB();
+  const r=db.recetas.find(x=>x.id===id);
+  if(!r)return;
+  document.getElementById('rd-nombre').textContent=r.nombre;
+  const lotes=db.lotes.filter(l=>l.receta_id===id);
+  let html=`<div style="font-family:var(--font-b);font-size:14px;color:var(--muted);font-style:italic;margin-bottom:12px;">${r.estilo||''} · base ${r.base_litros} lts · ${r.dias} días est.</div>`;
+  if(r.descripcion) html+=`<p style="font-family:var(--font-b);font-size:15px;color:var(--cream);margin-bottom:14px;line-height:1.6">${r.descripcion}</p>`;
+  if(r.ingredientes&&r.ingredientes.length){
+    html+='<div class="card-title" style="margin-bottom:10px">Ingredientes (por '+r.base_litros+' lts)</div>';
+    html+='<table class="tbl"><thead><tr><th>Ingrediente</th><th>Cantidad</th><th>Unidad</th></tr></thead><tbody>';
+    html+=r.ingredientes.map(i=>`<tr><td>${i.nombre}</td><td class="num">${i.cantidad}</td><td class="muted">${i.unidad}</td></tr>`).join('');
+    html+='</tbody></table>';
+  }
+  if(lotes.length){
+    html+='<div class="card-title" style="margin-top:16px;margin-bottom:8px">Lotes anteriores ('+lotes.length+')</div>';
+    html+=lotes.slice(-3).reverse().map(l=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--font-b);font-size:13px"><span>Lote #${l.id} — ${l.litros} lts</span>${estBadge(l.estado)}</div>`).join('');
+  }
+  document.getElementById('rd-content').innerHTML=html;
+  document.getElementById('rd-del-btn').onclick=()=>{
+    if(!confirm('¿Eliminar receta "'+r.nombre+'"?'))return;
+    db=loadDB();db.recetas=db.recetas.filter(x=>x.id!==id);saveDB(db);
+    closeModal('modal-rec-detail');showToast('Receta eliminada');renderRecetas();
+  };
+  openModal('modal-rec-detail');
+}
+
+function renderFinanzas(){
+  db=loadDB();
+  const mes=new Date().getMonth();const ano=new Date().getFullYear();
+  const finMes=db.finanzas.filter(f=>{const d=new Date(f.fecha);return d.getMonth()===mes&&d.getFullYear()===ano;});
+  const ing=finMes.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
+  const gas=finMes.filter(f=>f.tipo==='gasto').reduce((s,f)=>s+f.monto,0);
+  document.getElementById('fin-ingresos').textContent=fmtMoney(ing);
+  document.getElementById('fin-gastos').textContent=fmtMoney(gas);
+  const list=document.getElementById('fin-list');
+  const all=[...db.finanzas].reverse();
+  if(!all.length){list.innerHTML='<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin movimientos financieros</div></div>';return;}
+  const icons={insumos:'📦',energia:'⚡',equipamiento:'🔧',logistica:'🚚',otros:'📋',venta_barril:'🍺',venta_lata:'🥫',venta_botella:'🍾',otro:'💰'};
+  list.innerHTML='<table class="tbl"><thead><tr><th>Tipo</th><th>Descripción</th><th>Fecha</th><th>Monto</th><th></th></tr></thead><tbody>'+
+    all.map(f=>`<tr>
+      <td>${icons[f.categoria||'']||'💸'} <span class="muted">${f.categoria||''}</span></td>
+      <td>${f.descripcion}${f.file_data?` <a href="${f.file_data}" download="${f.file_name||'factura'}" style="color:var(--gold);font-size:12px;margin-left:6px">📎</a>`:''}</td>
+      <td class="muted">${f.fecha}</td>
+      <td style="font-family:var(--font-d);font-size:16px;color:${f.tipo==='ingreso'?'var(--green2)':'var(--red2)'};text-align:right">${f.tipo==='ingreso'?'+':'-'}${fmtMoney(f.monto)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="delFinanza(${f.id})">✕</button></td>
+    </tr>`).join('')+'</tbody></table>';
+}
+
+function delFinanza(id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  db=loadDB();db.finanzas=db.finanzas.filter(f=>f.id!==id);saveDB(db);showToast('Eliminado');renderFinanzas();
+}
+
+function renderConfig(){
+  db=loadDB();
+  const fl=document.getElementById('ferm-list');
+  fl.innerHTML=db.fermentadores.length?'<table class="tbl"><tbody>'+
+    db.fermentadores.map(f=>`<tr><td>${f.nombre}</td><td class="muted">${f.capacidad} lts</td><td><button class="btn btn-danger btn-sm" onclick="delFerm(${f.id})">✕</button></td></tr>`).join('')+
+    '</tbody></table>':'<div class="empty"><div class="empty-text">Sin fermentadores</div></div>';
+
+  const tl=document.getElementById('tipo-list');
+  tl.innerHTML=db.tipos.length?'<table class="tbl"><tbody>'+
+    db.tipos.map(t=>`<tr><td>${t.nombre}</td><td><button class="btn btn-danger btn-sm" onclick="delTipo(${t.id})">✕</button></td></tr>`).join('')+
+    '</tbody></table>':'<div class="empty"><div class="empty-text">Sin tipos</div></div>';
+}
+
+function delFerm(id){if(!confirm('¿Eliminar?'))return;db=loadDB();db.fermentadores=db.fermentadores.filter(f=>f.id!==id);saveDB(db);renderConfig();}
+function delTipo(id){if(!confirm('¿Eliminar?'))return;db=loadDB();db.tipos=db.tipos.filter(t=>t.id!==id);saveDB(db);renderConfig();}
+
+// ── EXPORT / IMPORT ──────────────────────────────────
+function exportDB(){
+  const data=JSON.stringify(loadDB(),null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='259brew_backup_'+today()+'.json';a.click();
+}
+
+function importDB(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      localStorage.setItem(DB_KEY,JSON.stringify(data));
+      db=data;showToast('✓ Datos importados');renderPage(getCurrentPage());
+    }catch{showToast('Error al importar el archivo');}
+  };
+  r.readAsText(f);
+}
+
+// ── INIT ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  navTo('inicio');
+});
+</script>
+</body>
+</html>
