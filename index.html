@@ -707,6 +707,7 @@ function showApp(user) {
   const chip = document.getElementById('user-chip');
   chip.textContent = user.email;
   chip.classList.add('show');
+  window._currentUser = user.email;
   navTo('inicio');
 }
 
@@ -884,7 +885,7 @@ async function saveInsumo() {
   };
   const { error } = await sb.from('insumos').insert(row);
   if (error) { showToast('Error al guardar: ' + error.message); return; }
-  await sb.from('movimientos').insert({ tipo: 'entrada', descripcion: 'Compra: ' + nombre, cantidad, unidad: row.unidad, fecha: row.fecha });
+  await sb.from('movimientos').insert({ tipo: 'entrada', descripcion: 'Compra: ' + nombre, cantidad, unidad: row.unidad, fecha: row.fecha, usuario: window._currentUser||'' });
   closeModal('modal-insumo');
   showToast('✓ Insumo guardado');
   ['ins-nombre','ins-cantidad','ins-precio','ins-minimo','ins-proveedor','ins-notas'].forEach(id => document.getElementById(id).value = '');
@@ -922,11 +923,11 @@ async function saveLote() {
     dias_est: parseInt(document.getElementById('prod-dias').value) || 28,
     estado: 'fermentacion',
     notas: document.getElementById('prod-notas').value.trim(),
-    log: [{ fecha: today(), estado: 'fermentacion', nota: 'Inicio de lote' }]
+    log: [{ fecha: today(), estado: 'fermentacion', nota: 'Inicio de lote', usuario: window._currentUser||'' }]
   };
   const { data, error } = await sb.from('lotes').insert(lote).select().single();
   if (error) { showToast('Error: ' + error.message); return; }
-  await sb.from('movimientos').insert({ tipo: 'produccion', descripcion: 'Lote iniciado: ' + rec.nombre, referencia_id: data.id, cantidad: litros, unidad: 'lts', fecha: lote.fecha_inicio });
+  await sb.from('movimientos').insert({ tipo: 'produccion', descripcion: 'Lote iniciado: ' + rec.nombre, referencia_id: data.id, cantidad: litros, unidad: 'lts', fecha: lote.fecha_inicio, usuario: window._currentUser||'' });
   closeModal('modal-prod');
   showToast('✓ Lote #' + data.id + ' iniciado');
   ['prod-litros','prod-notas'].forEach(id => document.getElementById(id).value = '');
@@ -946,7 +947,7 @@ async function saveEnvasado() {
   const prod = { lote_id, lote_nombre: lote?.receta_nombre||'—', tipo, cantidad, unidad: unidadMap[tipo]||tipo, merma: parseFloat(document.getElementById('env-merma').value)||0, fecha: document.getElementById('env-fecha').value||today(), notas: document.getElementById('env-notas').value.trim() };
   await sb.from('productos').insert(prod);
   await sb.from('lotes').update({ estado:'finalizado', log: [] }).eq('id', lote_id);
-  await sb.from('movimientos').insert({ tipo:'envasado', descripcion:'Envasado: '+(lote?.receta_nombre||'')+'→'+cantidad+' '+prod.unidad, cantidad, unidad:prod.unidad, fecha:prod.fecha });
+  await sb.from('movimientos').insert({ tipo:'envasado', descripcion:'Envasado: '+(lote?.receta_nombre||'')+'→'+cantidad+' '+prod.unidad, cantidad, unidad:prod.unidad, fecha:prod.fecha, usuario: window._currentUser||'' });
   closeModal('modal-envasar');
   showToast('✓ Envasado registrado');
   renderPage(getCurrentPage());
@@ -975,7 +976,7 @@ async function saveGasto() {
   const desc  = document.getElementById('gasto-desc').value.trim();
   const monto = parseFloat(document.getElementById('gasto-monto').value);
   if (!desc || !monto) { showToast('Completá descripción y monto'); return; }
-  const { error } = await sb.from('finanzas').insert({ tipo:'gasto', descripcion:desc, monto, fecha:document.getElementById('gasto-fecha').value||today(), categoria:document.getElementById('gasto-cat').value, notas:document.getElementById('gasto-notas').value.trim() });
+  const { error } = await sb.from('finanzas').insert({ tipo:'gasto', descripcion:desc, monto, fecha:document.getElementById('gasto-fecha').value||today(), categoria:document.getElementById('gasto-cat').value, notas:document.getElementById('gasto-notas').value.trim(), usuario: window._currentUser||'' });
   if (error) { showToast('Error: ' + error.message); return; }
   closeModal('modal-gasto'); showToast('✓ Gasto registrado');
   ['gasto-desc','gasto-monto','gasto-notas'].forEach(id => document.getElementById(id).value='');
@@ -986,7 +987,7 @@ async function saveIngreso() {
   const desc  = document.getElementById('ing-desc').value.trim();
   const monto = parseFloat(document.getElementById('ing-monto').value);
   if (!desc || !monto) { showToast('Completá descripción y monto'); return; }
-  const { error } = await sb.from('finanzas').insert({ tipo:'ingreso', descripcion:desc, monto, fecha:document.getElementById('ing-fecha').value||today(), categoria:document.getElementById('ing-tipo-sel').value, notas:document.getElementById('ing-notas').value.trim() });
+  const { error } = await sb.from('finanzas').insert({ tipo:'ingreso', descripcion:desc, monto, fecha:document.getElementById('ing-fecha').value||today(), categoria:document.getElementById('ing-tipo-sel').value, notas:document.getElementById('ing-notas').value.trim(), usuario: window._currentUser||'' });
   if (error) { showToast('Error: ' + error.message); return; }
   closeModal('modal-ingreso'); showToast('✓ Ingreso registrado');
   ['ing-desc','ing-monto','ing-notas'].forEach(id => document.getElementById(id).value='');
@@ -1012,7 +1013,7 @@ async function saveEstado() {
   const estado = document.getElementById('est-estado').value;
   const nota  = document.getElementById('est-nota').value.trim();
   const { data: lote } = await sb.from('lotes').select('log').eq('id', id).single();
-  const log = [...(lote?.log||[]), { fecha: today(), estado, nota }];
+  const log = [...(lote?.log||[]), { fecha: today(), estado, nota, usuario: window._currentUser||'' }];
   await sb.from('lotes').update({ estado, log }).eq('id', id);
   closeModal('modal-estado'); showToast('✓ Estado actualizado'); renderProduccion();
 }
@@ -1097,7 +1098,7 @@ async function renderInicio() {
   const mv = document.getElementById('home-movs');
   if (!movs||!movs.length) { mv.innerHTML = '<div class="empty"><div class="empty-text">Sin movimientos</div></div>'; return; }
   const tmap = { entrada:'📦 Entrada', produccion:'⚗ Producción', envasado:'🍺 Envasado', venta:'💰 Venta' };
-  mv.innerHTML = '<table class="tbl"><thead><tr><th>Tipo</th><th>Descripción</th><th>Cant.</th><th>Fecha</th></tr></thead><tbody>' + movs.map(m=>`<tr><td class="muted">${tmap[m.tipo]||m.tipo}</td><td>${m.descripcion}</td><td>${m.cantidad} ${m.unidad}</td><td class="muted">${m.fecha}</td></tr>`).join('') + '</tbody></table>';
+  mv.innerHTML = '<table class="tbl"><thead><tr><th>Tipo</th><th>Descripción</th><th>Cant.</th><th>Fecha</th><th>Usuario</th></tr></thead><tbody>' + movs.map(m=>`<tr><td class="muted">${tmap[m.tipo]||m.tipo}</td><td>${m.descripcion}</td><td>${m.cantidad} ${m.unidad}</td><td class="muted">${m.fecha}</td><td class="muted">${m.usuario||'—'}</td></tr>`).join('') + '</tbody></table>';
 }
 
 async function renderProduccion() {
@@ -1230,10 +1231,11 @@ async function renderFinanzas() {
   const list = document.getElementById('fin-list');
   if (!fin||!fin.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin movimientos financieros</div></div>'; return; }
   const icons = { insumos:'📦',energia:'⚡',equipamiento:'🔧',logistica:'🚚',otros:'📋',venta_barril:'🍺',venta_lata:'🥫',venta_botella:'🍾',otro:'💰' };
-  list.innerHTML = '<table class="tbl"><thead><tr><th>Cat.</th><th>Descripción</th><th>Fecha</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
+  list.innerHTML = '<table class="tbl"><thead><tr><th>Cat.</th><th>Descripción</th><th>Usuario</th><th>Fecha</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
     fin.map(f=>`<tr>
       <td>${icons[f.categoria||'']||'💸'}</td>
       <td>${f.descripcion}</td>
+      <td class="muted">${f.usuario||'—'}</td>
       <td class="muted">${f.fecha}</td>
       <td style="font-family:var(--font-d);font-size:16px;color:${f.tipo==='ingreso'?'var(--green2)':'var(--red2)'};text-align:right">${f.tipo==='ingreso'?'+':'-'}${fmtMoney(f.monto)}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="delFinanza(${f.id})">✕</button></td>
