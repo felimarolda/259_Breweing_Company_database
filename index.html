@@ -251,6 +251,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <div class="nav-item" id="nav-finanzas" onclick="navTo('finanzas')"><span class="nav-icon">◎</span> Gastos e ingresos</div>
     <div class="nav-section">Datos</div>
     <div class="nav-item" id="nav-config" onclick="navTo('config')"><span class="nav-icon">◇</span> Configuración</div>
+    <div class="nav-item" id="nav-ayuda" onclick="navTo('ayuda')"><span class="nav-icon">?</span> Cómo usar</div>
   </nav>
 
   <main class="main" id="main">
@@ -337,6 +338,98 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
         <div class="card"><div class="card-title">Fermentadores</div><div id="ferm-list"></div><button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openModal('modal-ferm')">+ Agregar fermentador</button></div>
         <div class="card"><div class="card-title">Tipos de insumo</div><div id="tipo-list"></div><button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openModal('modal-tipo')">+ Agregar tipo</button></div>
       </div>
+    </div>
+
+
+    <!-- AYUDA -->
+    <div class="page" id="page-ayuda">
+      <div class="page-hd">
+        <div><div class="page-title">¿Cómo usar el sistema?</div><div class="page-sub">guía paso a paso para la fábrica</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">El flujo de trabajo</div>
+        <div style="display:flex;flex-direction:column;gap:0;">
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">1</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Comprás insumos → los cargás</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">Cada vez que llega malta, lúpulo, levadura o cualquier otra cosa, lo registrás con cantidad, precio y fecha. El stock sube automáticamente.</div>
+            <div style="margin-top:8px;"><span class="badge badge-teal">+ Agregar → Insumo comprado</span></div></div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">2</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Cargás las recetas (una sola vez)</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">Cada estilo tiene su receta con ingredientes y cantidades por litro. Se carga una sola vez y queda guardada para siempre.</div>
+            <div style="margin-top:8px;"><span class="badge badge-teal">+ Agregar → Nueva receta</span></div></div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">3</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Iniciás una producción</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">Cuando empezás a cocinar, elegís la receta y los litros. El sistema descuenta todos los insumos del stock solo y crea el lote en producción.</div>
+            <div style="margin-top:8px;"><span class="badge badge-teal">+ Agregar → Iniciar producción</span></div></div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">4</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Actualizás el estado del lote</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">A medida que avanza, entrás a Producción y actualizás: Fermentación primaria → Maduración → Listo para envasar. Podés agregar notas en cada paso.</div>
+            <div style="margin-top:8px;"><span class="badge badge-teal">Producción → botón "Actualizar estado"</span></div></div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">5</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Envasás el lote</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">Cuando está listo, elegís el tipo de envase (barril, lata, botella), la cantidad y la merma. El lote pasa a Finalizado y el producto aparece en Inventario.</div>
+            <div style="margin-top:8px;"><span class="badge badge-teal">+ Agregar → Envasar lote</span></div></div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:17px;font-weight:700;flex-shrink:0;">6</div>
+            <div><div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--cream);margin-bottom:4px;">Registrás ventas y gastos</div>
+            <div style="font-family:var(--font-b);font-size:14px;color:var(--muted);line-height:1.6">Cada venta es un ingreso, cada compra o servicio es un gasto. El balance del mes se calcula solo en la pantalla de inicio.</div>
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-teal">+ Agregar → Registrar venta</span><span class="badge badge-amber">+ Agregar → Registrar gasto</span></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Qué hace cada sección</div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">◈</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Inicio</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Resumen: litros en fermentación, stock crítico, balance del mes y últimos movimientos.</div></div></div>
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">⚗</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Producción</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Lotes activos con progreso y estado. También el historial completo de producciones.</div></div></div>
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">▦</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Inventario</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Stock de insumos con alertas, producto terminado envasado e historial de movimientos.</div></div></div>
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">✦</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Recetas</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Estilos de cerveza con sus ingredientes. Click en una receta para ver el detalle.</div></div></div>
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">◎</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Gastos e ingresos</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Movimientos de plata, balance mensual e historial con facturas adjuntas.</div></div></div>
+            <div style="display:flex;gap:12px;"><span style="font-size:17px;width:22px;flex-shrink:0;margin-top:2px;">◇</span><div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;">Configuración</div><div style="font-family:var(--font-b);font-size:13px;color:var(--muted);">Fermentadores y tipos de insumo. Se hace una sola vez al empezar.</div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Preguntas frecuentes</div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+            <div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;margin-bottom:3px;">¿Se pierden los datos si cierro el navegador?</div><div style="font-family:var(--font-b);font-size:14px;color:var(--muted);">No. Todo está en la nube. Podés cerrar, apagar el teléfono, y al volver todo sigue ahí.</div></div>
+            <div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;margin-bottom:3px;">¿Lo que cargo lo ve el resto?</div><div style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Sí, al instante. Todos los usuarios ven los mismos datos en tiempo real.</div></div>
+            <div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;margin-bottom:3px;">¿Puedo borrar algo que cargué mal?</div><div style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Sí. En gastos/ingresos hay un ✕ en cada fila. En lotes y recetas hay botón "Eliminar" adentro.</div></div>
+            <div><div style="font-family:var(--font-d);font-weight:700;color:var(--cream);font-size:15px;margin-bottom:3px;">¿Cómo sé que el stock está bien?</div><div style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Al iniciar un lote, el sistema descuenta los insumos solo. En Inventario ves alertas en amarillo cuando algo baja del mínimo.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="border-left:3px solid var(--gold);">
+        <div class="card-title">Para empezar hoy — primer uso</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-m);font-size:10px;background:var(--gold);color:white;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;">Paso 1</span><span style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Ir a <strong style="color:var(--cream)">Configuración</strong> → agregar los fermentadores con nombre y capacidad</span></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-m);font-size:10px;background:var(--gold);color:white;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;">Paso 2</span><span style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Ir a <strong style="color:var(--cream)">Recetas</strong> → cargar cada estilo que hacen con ingredientes y proporciones</span></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-m);font-size:10px;background:var(--gold);color:white;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;">Paso 3</span><span style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Ir a <strong style="color:var(--cream)">+ Agregar → Insumo comprado</strong> → cargar el stock que tienen hoy en la fábrica</span></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;"><span style="font-family:var(--font-m);font-size:10px;background:var(--gold);color:white;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;">Paso 4</span><span style="font-family:var(--font-b);font-size:14px;color:var(--muted);">Si hay lotes en producción ahora, cargarlos en <strong style="color:var(--cream)">+ Agregar → Iniciar producción</strong> con la fecha real</span></div>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -664,6 +757,7 @@ function renderPage(p) {
   if (p === 'recetas')    renderRecetas();
   if (p === 'finanzas')   renderFinanzas();
   if (p === 'config')     renderConfig();
+  if (p === 'ayuda')      {} // static page, no render needed
 }
 
 // ── MODALS ────────────────────────────────────────────
