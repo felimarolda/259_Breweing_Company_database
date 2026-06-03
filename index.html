@@ -594,8 +594,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   <div class="modal">
     <div class="modal-hd"><div class="modal-title">Envasar lote</div><button class="modal-close" onclick="closeModal('modal-envasar')">×</button></div>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Lote a envasar</label><select class="form-select" id="env-lote"><option value="">Seleccionar lote listo...</option></select></div>
-      <div class="form-group"><label class="form-label">Tipo de envase</label><select class="form-select" id="env-tipo"><option value="barril">Barriles</option><option value="lata">Latas</option><option value="botella">Botellas</option><option value="litros">Litros sueltos</option></select></div>
+      <div class="form-group"><label class="form-label">Lote a envasar</label>
+        <select class="form-select" id="env-lote" onchange="loadLoteInfo()">
+          <option value="">Seleccionar lote listo...</option>
+        </select>
+      </div>
+      <div id="env-lote-info" style="display:none" class="form-hint"></div>
+      <div class="form-group"><label class="form-label">Tipo de envase</label>
+        <select class="form-select" id="env-tipo" onchange="toggleEnvBarriles()">
+          <option value="barril">Barriles</option>
+          <option value="lata">Latas</option>
+          <option value="botella">Botellas</option>
+          <option value="litros">Litros sueltos</option>
+        </select>
+      </div>
+      <div id="env-barriles-row" class="form-group">
+        <label class="form-label">Barriles a cargar (opcional)</label>
+        <select class="form-select" id="env-barriles" multiple style="height:80px">
+        </select>
+        <div class="form-hint">Seleccioná los barriles vacíos que se llenan con este lote</div>
+      </div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Cantidad envasada</label><input class="form-input" id="env-cantidad" type="number" min="0" step="0.1" placeholder="0"></div>
         <div class="form-group"><label class="form-label">Merma (litros)</label><input class="form-input" id="env-merma" type="number" min="0" step="0.1" placeholder="0"></div>
@@ -668,12 +686,48 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   <div class="modal">
     <div class="modal-hd"><div class="modal-title">Registrar venta / ingreso</div><button class="modal-close" onclick="closeModal('modal-ingreso')">×</button></div>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="ing-desc" placeholder="Ej: Venta 10 barriles — Bar La Ruta"></div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-select" id="ing-tipo-sel" onchange="toggleIngresoFields()">
+          <option value="venta_barril">Venta barriles</option>
+          <option value="venta_lata">Venta latas</option>
+          <option value="venta_botella">Venta botellas</option>
+          <option value="otro">Otro ingreso</option>
+        </select>
+      </div>
+      <div class="form-group" id="ing-cliente-row"><label class="form-label">Cliente</label>
+        <select class="form-select" id="ing-cliente">
+          <option value="">Independiente / sin cliente</option>
+        </select>
+      </div>
+      <div class="form-group" id="ing-precio-row" style="display:none"><label class="form-label">Lista de precios (referencia)</label>
+        <select class="form-select" id="ing-lista" onchange="loadPrecioRef()">
+          <option value="">Sin referencia</option>
+          <option value="minorista">Minorista</option>
+          <option value="mayorista">Mayorista</option>
+          <option value="especial">Especial</option>
+        </select>
+      </div>
+      <div class="form-group" id="ing-barril-row" style="display:none"><label class="form-label">Barriles entregados (opcional)</label>
+        <select class="form-select" id="ing-barril" multiple style="height:80px">
+        </select>
+        <div class="form-hint">Seleccioná los barriles que se entregan en esta venta</div>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción</label>
+        <input class="form-input" id="ing-desc" placeholder="Ej: Venta 10 barriles — Bar La Ruta">
+      </div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" id="ing-monto" type="number" min="0" placeholder="0"></div>
         <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="ing-fecha" type="date"></div>
       </div>
-      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="ing-tipo-sel"><option value="venta_barril">Venta barriles</option><option value="venta_lata">Venta latas</option><option value="venta_botella">Venta botellas</option><option value="otro">Otro ingreso</option></select></div>
+      <div class="form-group"><label class="form-label">¿Generar factura por cobrar?</label>
+        <select class="form-select" id="ing-gen-factura">
+          <option value="no">No generar</option>
+          <option value="si">Sí, generar factura pendiente</option>
+        </select>
+      </div>
+      <div id="ing-factura-venc" style="display:none" class="form-group"><label class="form-label">Fecha de vencimiento</label>
+        <input class="form-input" id="ing-fac-venc" type="date">
+      </div>
       <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="ing-notas" placeholder="Observaciones..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -1033,8 +1087,8 @@ function renderPage(p) {
 async function openModal(id) {
   if (id === 'modal-insumo') await fillTiposSelect('ins-tipo');
   if (id === 'modal-prod')   { await fillRecetasSelect(); await fillFermsSelect(); document.getElementById('prod-fecha').value = today(); }
-  if (id === 'modal-envasar'){ await fillLotesListosSelect(); document.getElementById('env-fecha').value = today(); }
-  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); }
+  if (id === 'modal-envasar'){ await fillLotesListosSelect(); document.getElementById('env-fecha').value = today(); await fillBarrilesSelect('env-barriles','vacio'); toggleEnvBarriles(); }
+  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); await fillClientesSelect('ing-cliente'); await fillBarrilesSelect('ing-barril','deposito'); document.getElementById('ing-gen-factura').value='no'; document.getElementById('ing-factura-venc').style.display='none'; toggleIngresoFields(); }
   if (id === 'modal-gasto')  { document.getElementById('gasto-fecha').value = today(); }
   if (id === 'modal-factura') { document.getElementById('fac-fecha').value = today(); await fillClientesSelect('fac-cliente'); document.getElementById('fac-id').value=''; }
   if (id === 'modal-barril')  { await fillClientesSelect('barril-cliente'); toggleBarrilFields(); document.getElementById('barril-id').value=''; document.getElementById('barril-modal-title').textContent='Registrar barril'; }
@@ -1215,13 +1269,21 @@ async function saveEnvasado() {
   const tipo     = document.getElementById('env-tipo').value;
   if (!lote_id || !cantidad) { showToast('Completá lote y cantidad'); return; }
   const unidadMap = { barril:'barriles', lata:'latas', botella:'botellas', litros:'litros' };
-  const { data: lote } = await sb.from('lotes').select('receta_nombre').eq('id', lote_id).single();
+  const { data: lote } = await sb.from('lotes').select('receta_nombre,receta_id').eq('id', lote_id).single();
   const prod = { lote_id, lote_nombre: lote?.receta_nombre||'—', tipo, cantidad, unidad: unidadMap[tipo]||tipo, merma: parseFloat(document.getElementById('env-merma').value)||0, fecha: document.getElementById('env-fecha').value||today(), notas: document.getElementById('env-notas').value.trim() };
-  await sb.from('productos').insert(prod);
+  const { data: prodData } = await sb.from('productos').insert(prod).select().single();
   await sb.from('lotes').update({ estado:'finalizado', log: [] }).eq('id', lote_id);
   await sb.from('movimientos').insert({ tipo:'envasado', descripcion:'Envasado: '+(lote?.receta_nombre||'')+'→'+cantidad+' '+prod.unidad, cantidad, unidad:prod.unidad, fecha:prod.fecha, usuario: window._currentUser||'' });
+  // update selected barriles with this producto
+  if (tipo === 'barril' && prodData) {
+    const sel = document.getElementById('env-barriles');
+    const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
+    for (const bid of ids) {
+      await sb.from('barriles').update({ estado:'deposito', producto_id:prodData.id }).eq('id', bid);
+    }
+  }
   closeModal('modal-envasar');
-  showToast('✓ Envasado registrado');
+  showToast('✓ Envasado registrado'+(tipo==='barril'?' — barriles actualizados':''));
   renderPage(getCurrentPage());
 }
 
@@ -1258,10 +1320,54 @@ async function saveGasto() {
 async function saveIngreso() {
   const desc  = document.getElementById('ing-desc').value.trim();
   const monto = parseFloat(document.getElementById('ing-monto').value);
-  if (!desc || !monto) { showToast('Completá descripción y monto'); return; }
-  const { error } = await sb.from('finanzas').insert({ tipo:'ingreso', descripcion:desc, monto, fecha:document.getElementById('ing-fecha').value||today(), categoria:document.getElementById('ing-tipo-sel').value, notas:document.getElementById('ing-notas').value.trim(), usuario: window._currentUser||'' });
+  if (!monto) { showToast('Ingresá el monto'); return; }
+  const cliId = parseInt(document.getElementById('ing-cliente').value)||null;
+  const fecha = document.getElementById('ing-fecha').value||today();
+  const tipo  = document.getElementById('ing-tipo-sel').value;
+
+  // auto-generate desc if empty
+  let finalDesc = desc;
+  if (!finalDesc && cliId) {
+    const { data: c } = await sb.from('clientes').select('nombre_fantasia,razon_social').eq('id',cliId).single();
+    finalDesc = tipo.replace('_',' ') + (c ? ' — ' + (c.nombre_fantasia||c.razon_social) : '');
+  }
+  if (!finalDesc) finalDesc = tipo.replace('_',' ');
+
+  const { error } = await sb.from('finanzas').insert({
+    tipo:'ingreso', descripcion:finalDesc, monto, fecha,
+    categoria:tipo, cliente_id:cliId,
+    notas:document.getElementById('ing-notas').value.trim(),
+    usuario: window._currentUser||''
+  });
   if (error) { showToast('Error: ' + error.message); return; }
-  closeModal('modal-ingreso'); showToast('✓ Ingreso registrado');
+
+  // update barriles to entregado if selected
+  if (tipo === 'venta_barril') {
+    const sel = document.getElementById('ing-barril');
+    const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
+    for (const bid of ids) {
+      await sb.from('barriles').update({
+        estado:'entregado', cliente_id:cliId, fecha_entrega:fecha
+      }).eq('id',bid);
+    }
+  }
+
+  // generate factura if requested
+  if (document.getElementById('ing-gen-factura').value === 'si') {
+    await sb.from('facturas').insert({
+      numero:'', monto, cliente_id:cliId,
+      fecha_emision:fecha,
+      fecha_vencimiento:document.getElementById('ing-fac-venc').value||null,
+      estado:'pendiente',
+      descripcion:finalDesc,
+      usuario:window._currentUser||''
+    });
+    showToast('✓ Ingreso y factura generados');
+  } else {
+    showToast('✓ Ingreso registrado');
+  }
+
+  closeModal('modal-ingreso');
   ['ing-desc','ing-monto','ing-notas'].forEach(id => document.getElementById(id).value='');
   renderPage(getCurrentPage());
 }
@@ -1510,7 +1616,7 @@ async function renderFinanzas() {
   list.innerHTML = '<table class="tbl"><thead><tr><th>Cat.</th><th>Descripción</th><th>Usuario</th><th>Fecha</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
     fin2.map(f=>`<tr>
       <td>${icons[f.categoria||'']||'💸'}</td>
-      <td>${f.descripcion}</td>
+      <td>${f.descripcion}${f.cliente_id?'':''}</td>
       <td class="muted">${f.usuario||'—'}</td>
       <td class="muted">${f.fecha}</td>
       <td style="font-family:var(--font-d);font-size:16px;color:${f.tipo==='ingreso'?'var(--green2)':'var(--red2)'};text-align:right">${f.tipo==='ingreso'?'+':'-'}${fmtMoney(f.monto)}</td>
@@ -1900,6 +2006,82 @@ async function delFactura(id) {
   if (!confirm('¿Eliminar esta factura?')) return;
   await sb.from('facturas').delete().eq('id',id);
   showToast('Eliminada'); renderCobros();
+}
+
+
+// ── CONNECTED FIELD HELPERS ──────────────────────────
+function toggleIngresoFields() {
+  const tipo = document.getElementById('ing-tipo-sel').value;
+  const esVenta = tipo !== 'otro';
+  document.getElementById('ing-cliente-row').style.display = 'flex';
+  document.getElementById('ing-precio-row').style.display = esVenta ? 'flex' : 'none';
+  document.getElementById('ing-barril-row').style.display = tipo === 'venta_barril' ? 'flex' : 'none';
+  // auto-generar factura si el cliente tiene cuenta corriente
+  autoSuggestFactura();
+}
+
+async function autoSuggestFactura() {
+  const cliId = parseInt(document.getElementById('ing-cliente').value);
+  if (!cliId) return;
+  const { data: c } = await sb.from('clientes').select('forma_pago,plazo_pago').eq('id',cliId).single();
+  if (c && c.forma_pago === 'cuenta_corriente') {
+    document.getElementById('ing-gen-factura').value = 'si';
+    document.getElementById('ing-factura-venc').style.display = 'flex';
+    if (c.plazo_pago > 0) {
+      const venc = new Date(); venc.setDate(venc.getDate() + c.plazo_pago);
+      document.getElementById('ing-fac-venc').value = venc.toISOString().split('T')[0];
+    }
+  }
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'ing-gen-factura') {
+    document.getElementById('ing-factura-venc').style.display = e.target.value === 'si' ? 'flex' : 'none';
+  }
+  if (e.target.id === 'ing-cliente') autoSuggestFactura();
+});
+
+async function fillBarrilesSelect(selectId, estadoFilter) {
+  let query = sb.from('barriles').select('id,numero,capacidad,estado').order('numero');
+  if (estadoFilter) query = query.eq('estado', estadoFilter);
+  const { data } = await query;
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '';
+  (data||[]).forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = b.numero + ' (' + b.capacidad + 'L) — ' + b.estado;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadPrecioRef() {
+  const lista = document.getElementById('ing-lista').value;
+  const tipo = document.getElementById('ing-tipo-sel').value;
+  if (!lista) return;
+  const unidadMap = { venta_barril:'barril', venta_lata:'lata', venta_botella:'botella' };
+  const { data } = await sb.from('precios').select('*').eq('lista', lista).eq('unidad', unidadMap[tipo]||'barril');
+  if (data&&data.length) {
+    const hint = data.map(p=>p.producto+': '+fmtMoney(p.precio)).join(' | ');
+    showToast('Ref. precios: ' + hint.slice(0,60));
+  }
+}
+
+function toggleEnvBarriles() {
+  const tipo = document.getElementById('env-tipo').value;
+  document.getElementById('env-barriles-row').style.display = tipo === 'barril' ? 'flex' : 'none';
+}
+
+async function loadLoteInfo() {
+  const id = parseInt(document.getElementById('env-lote').value);
+  if (!id) return;
+  const { data: l } = await sb.from('lotes').select('litros,receta_nombre,fecha_inicio').eq('id',id).single();
+  if (l) {
+    const el = document.getElementById('env-lote-info');
+    el.style.display = 'block';
+    el.textContent = l.receta_nombre + ' — ' + l.litros + ' lts — inicio: ' + l.fecha_inicio;
+  }
 }
 
 // ── START ─────────────────────────────────────────────
