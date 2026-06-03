@@ -397,8 +397,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <!-- CUENTAS POR COBRAR -->
     <div class="page" id="page-cobros">
       <div class="page-hd">
-        <div><div class="page-title">Cuentas por cobrar</div><div class="page-sub">facturas pendientes y vencidas</div></div>
-        <button class="btn btn-primary" onclick="openModal('modal-factura')">+ Cargar factura</button>
+        <div><div class="page-title">Cuentas por cobrar</div><div class="page-sub">facturas internas pendientes y vencidas</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-factura')">+ Factura interna</button>
       </div>
       <div class="grid2" style="margin-bottom:0">
         <div class="stat-card"><div class="stat-label">Total por cobrar</div><div class="stat-val" id="cobros-total">$0</div></div>
@@ -683,10 +683,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 
 <!-- INGRESO -->
 <div class="modal-ov" id="modal-ingreso">
-  <div class="modal">
-    <div class="modal-hd"><div class="modal-title">Registrar venta / ingreso</div><button class="modal-close" onclick="closeModal('modal-ingreso')">×</button></div>
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-hd"><div class="modal-title">Registrar venta</div><button class="modal-close" onclick="closeModal('modal-ingreso')">×</button></div>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Tipo</label>
+
+      <!-- TIPO -->
+      <div class="form-group"><label class="form-label">Tipo de venta</label>
         <select class="form-select" id="ing-tipo-sel" onchange="toggleIngresoFields()">
           <option value="venta_barril">Venta barriles</option>
           <option value="venta_lata">Venta latas</option>
@@ -694,45 +696,87 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
           <option value="otro">Otro ingreso</option>
         </select>
       </div>
-      <div class="form-group" id="ing-cliente-row"><label class="form-label">Cliente</label>
-        <select class="form-select" id="ing-cliente">
+
+      <!-- CLIENTE -->
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-select" id="ing-cliente" onchange="onClienteChange()">
           <option value="">Independiente / sin cliente</option>
         </select>
       </div>
-      <div class="form-group" id="ing-precio-row" style="display:none"><label class="form-label">Lista de precios (referencia)</label>
-        <select class="form-select" id="ing-lista" onchange="loadPrecioRef()">
-          <option value="">Sin referencia</option>
-          <option value="minorista">Minorista</option>
-          <option value="mayorista">Mayorista</option>
-          <option value="especial">Especial</option>
+
+      <!-- PRODUCTO DE LISTA (aparece al seleccionar cliente) -->
+      <div class="form-group" id="ing-producto-row" style="display:none">
+        <label class="form-label">Producto <span id="ing-lista-badge" style="font-family:var(--font-m);font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(74,122,58,0.15);color:var(--gold);margin-left:6px;"></span></label>
+        <select class="form-select" id="ing-producto" onchange="onProductoChange()">
+          <option value="">Seleccionar producto...</option>
         </select>
+        <div class="form-hint" id="ing-precio-ref" style="margin-top:4px;"></div>
       </div>
-      <div class="form-group" id="ing-barril-row" style="display:none"><label class="form-label">Barriles entregados (opcional)</label>
-        <select class="form-select" id="ing-barril" multiple style="height:80px">
-        </select>
-        <div class="form-hint">Seleccioná los barriles que se entregan en esta venta</div>
+
+      <!-- CANTIDAD -->
+      <div class="form-group" id="ing-cantidad-row" style="display:none">
+        <label class="form-label">Cantidad</label>
+        <input class="form-input" id="ing-cantidad" type="number" min="1" step="1" placeholder="0" oninput="calcMontoEsperado()">
       </div>
-      <div class="form-group"><label class="form-label">Descripción</label>
-        <input class="form-input" id="ing-desc" placeholder="Ej: Venta 10 barriles — Bar La Ruta">
+
+      <!-- MONTO con alerta de desvío -->
+      <div class="form-group">
+        <label class="form-label">Monto total ($)</label>
+        <input class="form-input" id="ing-monto" type="number" min="0" placeholder="0" oninput="checkPrecioDesvio()">
+        <!-- ALERTA DESVÍO -->
+        <div id="ing-desvio-alert" style="display:none;margin-top:8px;background:rgba(196,96,80,0.12);border:2px solid rgba(196,96,80,0.5);border-radius:var(--r);padding:12px 14px;">
+          <div style="font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--red2);margin-bottom:6px;">⚠ Precio fuera de lista</div>
+          <div style="font-family:var(--font-b);font-size:13px;color:var(--muted);margin-bottom:8px;" id="ing-desvio-texto"></div>
+          <div class="form-group">
+            <label class="form-label" style="color:var(--red2)">Motivo del desvío (obligatorio)</label>
+            <input class="form-input" id="ing-desvio-motivo" placeholder="Ej: descuento acordado, promoción, error..." style="border-color:rgba(196,96,80,0.4)">
+          </div>
+        </div>
       </div>
-      <div class="form-grid form-grid-2">
-        <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" id="ing-monto" type="number" min="0" placeholder="0"></div>
-        <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="ing-fecha" type="date"></div>
+
+      <!-- FECHA -->
+      <div class="form-group"><label class="form-label">Fecha</label>
+        <input class="form-input" id="ing-fecha" type="date">
       </div>
-      <div class="form-group"><label class="form-label">¿Generar factura por cobrar?</label>
-        <select class="form-select" id="ing-gen-factura">
-          <option value="no">No generar</option>
-          <option value="si">Sí, generar factura pendiente</option>
-        </select>
+
+      <!-- BARRILES (solo venta barriles) -->
+      <div class="form-group" id="ing-barril-row" style="display:none">
+        <label class="form-label">Barriles entregados</label>
+        <select class="form-select" id="ing-barril" multiple style="height:90px"></select>
+        <div class="form-hint">Seleccioná los barriles que salen en esta venta</div>
       </div>
-      <div id="ing-factura-venc" style="display:none" class="form-group"><label class="form-label">Fecha de vencimiento</label>
-        <input class="form-input" id="ing-fac-venc" type="date">
+
+      <!-- DESCRIPCIÓN -->
+      <div class="form-group"><label class="form-label">Descripción / observaciones</label>
+        <input class="form-input" id="ing-desc" placeholder="Se completa automáticamente o escribí algo">
       </div>
-      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="ing-notas" placeholder="Observaciones..."></textarea></div>
+
+      <!-- FACTURA INTERNA -->
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Factura interna</div>
+        <div class="form-group" style="margin:0"><label class="form-label">¿Generar factura interna?</label>
+          <select class="form-select" id="ing-gen-factura">
+            <option value="no">No generar</option>
+            <option value="si">Sí — registrar como cuenta por cobrar</option>
+          </select>
+        </div>
+        <div id="ing-factura-venc" style="display:none" class="form-group">
+          <label class="form-label">Fecha de vencimiento</label>
+          <input class="form-input" id="ing-fac-venc" type="date">
+        </div>
+        <div id="ing-factura-num" style="display:none" class="form-group">
+          <label class="form-label">Número de comprobante (opcional)</label>
+          <input class="form-input" id="ing-fac-num" placeholder="Ej: 0001-00000001">
+        </div>
+      </div>
+
+      <div class="form-group"><label class="form-label">Notas internas</label>
+        <textarea class="form-textarea" id="ing-notas" placeholder="Observaciones..."></textarea>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-ingreso')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveIngreso()">Guardar ingreso</button>
+      <button class="btn btn-primary" onclick="saveIngreso()">Guardar venta</button>
     </div>
   </div>
 </div>
@@ -935,7 +979,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 <!-- FACTURA/COBRO -->
 <div class="modal-ov" id="modal-factura">
   <div class="modal" style="max-width:500px;">
-    <div class="modal-hd"><div class="modal-title">Cargar factura / cuenta por cobrar</div><button class="modal-close" onclick="closeModal('modal-factura')">×</button></div>
+    <div class="modal-hd"><div class="modal-title">Nueva factura interna</div><button class="modal-close" onclick="closeModal('modal-factura')">×</button></div>
     <input type="hidden" id="fac-id">
     <div class="form-grid">
       <div class="form-grid form-grid-2">
@@ -1088,7 +1132,7 @@ async function openModal(id) {
   if (id === 'modal-insumo') await fillTiposSelect('ins-tipo');
   if (id === 'modal-prod')   { await fillRecetasSelect(); await fillFermsSelect(); document.getElementById('prod-fecha').value = today(); }
   if (id === 'modal-envasar'){ await fillLotesListosSelect(); document.getElementById('env-fecha').value = today(); await fillBarrilesSelect('env-barriles','vacio'); toggleEnvBarriles(); }
-  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); await fillClientesSelect('ing-cliente'); await fillBarrilesSelect('ing-barril','deposito'); document.getElementById('ing-gen-factura').value='no'; document.getElementById('ing-factura-venc').style.display='none'; toggleIngresoFields(); }
+  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); await fillClientesSelect('ing-cliente'); await fillBarrilesSelect('ing-barril','deposito'); document.getElementById('ing-gen-factura').value='no'; document.getElementById('ing-factura-venc').style.display='none'; document.getElementById('ing-factura-num').style.display='none'; document.getElementById('ing-producto-row').style.display='none'; document.getElementById('ing-cantidad-row').style.display='none'; document.getElementById('ing-desvio-alert').style.display='none'; document.getElementById('ing-precio-ref').textContent=''; window._precioEsperado=0; toggleIngresoFields(); }
   if (id === 'modal-gasto')  { document.getElementById('gasto-fecha').value = today(); }
   if (id === 'modal-factura') { document.getElementById('fac-fecha').value = today(); await fillClientesSelect('fac-cliente'); document.getElementById('fac-id').value=''; }
   if (id === 'modal-barril')  { await fillClientesSelect('barril-cliente'); toggleBarrilFields(); document.getElementById('barril-id').value=''; document.getElementById('barril-modal-title').textContent='Registrar barril'; }
@@ -1318,57 +1362,81 @@ async function saveGasto() {
 }
 
 async function saveIngreso() {
-  const desc  = document.getElementById('ing-desc').value.trim();
   const monto = parseFloat(document.getElementById('ing-monto').value);
   if (!monto) { showToast('Ingresá el monto'); return; }
+
+  // check desvío motivo
+  const alertVisible = document.getElementById('ing-desvio-alert').style.display !== 'none';
+  if (alertVisible) {
+    const motivo = document.getElementById('ing-desvio-motivo').value.trim();
+    if (!motivo) { showToast('⚠ Explicá el motivo del precio fuera de lista'); document.getElementById('ing-desvio-motivo').focus(); return; }
+  }
+
   const cliId = parseInt(document.getElementById('ing-cliente').value)||null;
   const fecha = document.getElementById('ing-fecha').value||today();
   const tipo  = document.getElementById('ing-tipo-sel').value;
+  const cant  = parseFloat(document.getElementById('ing-cantidad').value)||null;
 
-  // auto-generate desc if empty
-  let finalDesc = desc;
-  if (!finalDesc && cliId) {
+  // build description
+  let desc = document.getElementById('ing-desc').value.trim();
+  const prodSel = document.getElementById('ing-producto');
+  const prodNombre = prodSel?.options[prodSel.selectedIndex]?.text?.split(' — ')[0] || '';
+  let cliNombre = '';
+  if (cliId) {
     const { data: c } = await sb.from('clientes').select('nombre_fantasia,razon_social').eq('id',cliId).single();
-    finalDesc = tipo.replace('_',' ') + (c ? ' — ' + (c.nombre_fantasia||c.razon_social) : '');
+    cliNombre = c ? (c.nombre_fantasia||c.razon_social) : '';
   }
-  if (!finalDesc) finalDesc = tipo.replace('_',' ');
+  if (!desc) {
+    desc = [prodNombre||tipo.replace('_',' '), cant?cant+'u.':'', cliNombre?'→ '+cliNombre:''].filter(Boolean).join(' ');
+  }
+
+  // build notas with desvio if any
+  let notas = document.getElementById('ing-notas').value.trim();
+  if (alertVisible) {
+    const motivo = document.getElementById('ing-desvio-motivo').value.trim();
+    const esperado = window._precioEsperado * (cant||1);
+    notas = `[PRECIO FUERA DE LISTA — esperado: ${fmtMoney(esperado)}, registrado: ${fmtMoney(monto)}, motivo: ${motivo}]${notas?' '+notas:''}`;
+  }
+
+  // get precio_id if product selected
+  const precioId = prodSel?.value ? parseInt(prodSel.value) : null;
 
   const { error } = await sb.from('finanzas').insert({
-    tipo:'ingreso', descripcion:finalDesc, monto, fecha,
+    tipo:'ingreso', descripcion:desc, monto, fecha,
     categoria:tipo, cliente_id:cliId,
-    notas:document.getElementById('ing-notas').value.trim(),
-    usuario: window._currentUser||''
+    precio_id:precioId, cantidad:cant,
+    notas, usuario: window._currentUser||''
   });
   if (error) { showToast('Error: ' + error.message); return; }
 
-  // update barriles to entregado if selected
+  // update barriles
   if (tipo === 'venta_barril') {
     const sel = document.getElementById('ing-barril');
     const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
     for (const bid of ids) {
-      await sb.from('barriles').update({
-        estado:'entregado', cliente_id:cliId, fecha_entrega:fecha
-      }).eq('id',bid);
+      await sb.from('barriles').update({ estado:'entregado', cliente_id:cliId, fecha_entrega:fecha }).eq('id',bid);
     }
   }
 
-  // generate factura if requested
+  // generate factura interna
   if (document.getElementById('ing-gen-factura').value === 'si') {
+    const numFac = document.getElementById('ing-fac-num').value.trim();
     await sb.from('facturas').insert({
-      numero:'', monto, cliente_id:cliId,
+      numero:numFac, monto, cliente_id:cliId,
       fecha_emision:fecha,
       fecha_vencimiento:document.getElementById('ing-fac-venc').value||null,
-      estado:'pendiente',
-      descripcion:finalDesc,
+      estado:'pendiente', descripcion:desc,
       usuario:window._currentUser||''
     });
-    showToast('✓ Ingreso y factura generados');
+    showToast('✓ Venta y factura interna registradas');
   } else {
-    showToast('✓ Ingreso registrado');
+    showToast('✓ Venta registrada');
   }
 
   closeModal('modal-ingreso');
-  ['ing-desc','ing-monto','ing-notas'].forEach(id => document.getElementById(id).value='');
+  ['ing-desc','ing-monto','ing-notas','ing-desvio-motivo','ing-cantidad'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ing-desvio-alert').style.display='none';
+  window._precioEsperado = 0;
   renderPage(getCurrentPage());
 }
 
@@ -2009,36 +2077,118 @@ async function delFactura(id) {
 }
 
 
-// ── CONNECTED FIELD HELPERS ──────────────────────────
+// ── VENTA / INGRESO LOGIC ──────────────────────────
+window._precioEsperado = 0;
+window._precioLista = null;
+
 function toggleIngresoFields() {
   const tipo = document.getElementById('ing-tipo-sel').value;
-  const esVenta = tipo !== 'otro';
-  document.getElementById('ing-cliente-row').style.display = 'flex';
-  document.getElementById('ing-precio-row').style.display = esVenta ? 'flex' : 'none';
   document.getElementById('ing-barril-row').style.display = tipo === 'venta_barril' ? 'flex' : 'none';
-  // auto-generar factura si el cliente tiene cuenta corriente
-  autoSuggestFactura();
+  // reload productos for new tipo
+  const cliId = parseInt(document.getElementById('ing-cliente')?.value)||0;
+  if (cliId) loadProductosCliente(cliId);
 }
 
-async function autoSuggestFactura() {
-  const cliId = parseInt(document.getElementById('ing-cliente').value);
-  if (!cliId) return;
-  const { data: c } = await sb.from('clientes').select('forma_pago,plazo_pago').eq('id',cliId).single();
-  if (c && c.forma_pago === 'cuenta_corriente') {
+async function onClienteChange() {
+  const cliId = parseInt(document.getElementById('ing-cliente').value)||0;
+  if (!cliId) {
+    document.getElementById('ing-producto-row').style.display = 'none';
+    document.getElementById('ing-cantidad-row').style.display = 'none';
+    document.getElementById('ing-gen-factura').value = 'no';
+    document.getElementById('ing-factura-venc').style.display = 'none';
+    document.getElementById('ing-factura-num').style.display = 'none';
+    window._precioLista = null;
+    return;
+  }
+  const { data: c } = await sb.from('clientes').select('*').eq('id',cliId).single();
+  if (!c) return;
+  // show lista badge
+  const badge = document.getElementById('ing-lista-badge');
+  badge.textContent = 'lista ' + (c.lista_precios||'minorista');
+  // auto factura for cta cte
+  if (c.forma_pago === 'cuenta_corriente') {
     document.getElementById('ing-gen-factura').value = 'si';
     document.getElementById('ing-factura-venc').style.display = 'flex';
+    document.getElementById('ing-factura-num').style.display = 'flex';
     if (c.plazo_pago > 0) {
       const venc = new Date(); venc.setDate(venc.getDate() + c.plazo_pago);
       document.getElementById('ing-fac-venc').value = venc.toISOString().split('T')[0];
     }
+  } else {
+    document.getElementById('ing-gen-factura').value = 'no';
+    document.getElementById('ing-factura-venc').style.display = 'none';
+    document.getElementById('ing-factura-num').style.display = 'none';
   }
+  await loadProductosCliente(cliId, c.lista_precios||'minorista');
+}
+
+async function loadProductosCliente(cliId, lista) {
+  if (!lista) {
+    const { data: c } = await sb.from('clientes').select('lista_precios').eq('id',cliId).single();
+    lista = c?.lista_precios || 'minorista';
+  }
+  const tipo = document.getElementById('ing-tipo-sel').value;
+  const unidadMap = { venta_barril:'barril', venta_lata:'lata', venta_botella:'botella' };
+  const unidad = unidadMap[tipo];
+  let q = sb.from('precios').select('*').eq('lista', lista);
+  if (unidad) q = q.eq('unidad', unidad);
+  const { data: prods } = await q.order('producto');
+  window._precioLista = lista;
+  window._preciosData = prods || [];
+  const sel = document.getElementById('ing-producto');
+  sel.innerHTML = '<option value="">Seleccionar producto...</option>';
+  (prods||[]).forEach(p => {
+    sel.innerHTML += `<option value="${p.id}" data-precio="${p.precio}" data-unidad="${p.unidad}">${p.producto} — ${fmtMoney(p.precio)}/${p.unidad}</option>`;
+  });
+  document.getElementById('ing-producto-row').style.display = 'flex';
+  document.getElementById('ing-cantidad-row').style.display = 'flex';
+}
+
+function onProductoChange() {
+  const sel = document.getElementById('ing-producto');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.dataset.precio) { window._precioEsperado = 0; return; }
+  const precio = parseFloat(opt.dataset.precio);
+  window._precioEsperado = precio;
+  document.getElementById('ing-precio-ref').textContent = 'Precio de lista: ' + fmtMoney(precio) + ' por ' + opt.dataset.unidad;
+  calcMontoEsperado();
+}
+
+function calcMontoEsperado() {
+  const cant = parseFloat(document.getElementById('ing-cantidad').value)||1;
+  const precio = window._precioEsperado||0;
+  if (precio > 0) {
+    const total = precio * cant;
+    document.getElementById('ing-monto').value = total;
+    document.getElementById('ing-precio-ref').textContent = 'Precio lista: ' + fmtMoney(precio) + ' × ' + cant + ' = ' + fmtMoney(total);
+    checkPrecioDesvio();
+  }
+}
+
+function checkPrecioDesvio() {
+  const monto = parseFloat(document.getElementById('ing-monto').value)||0;
+  const cant = parseFloat(document.getElementById('ing-cantidad').value)||1;
+  const esperado = window._precioEsperado * cant;
+  const alert = document.getElementById('ing-desvio-alert');
+  if (!esperado || Math.abs(monto - esperado) < 0.01) {
+    alert.style.display = 'none';
+    return;
+  }
+  const diff = monto - esperado;
+  const pct = Math.round(Math.abs(diff)/esperado*100);
+  const texto = diff < 0
+    ? `El monto ingresado (${fmtMoney(monto)}) es ${pct}% MENOR al precio de lista (${fmtMoney(esperado)}). Descuento de ${fmtMoney(Math.abs(diff))}.`
+    : `El monto ingresado (${fmtMoney(monto)}) es ${pct}% MAYOR al precio de lista (${fmtMoney(esperado)}). Recargo de ${fmtMoney(diff)}.`;
+  document.getElementById('ing-desvio-texto').textContent = texto;
+  alert.style.display = 'block';
 }
 
 document.addEventListener('change', function(e) {
   if (e.target.id === 'ing-gen-factura') {
-    document.getElementById('ing-factura-venc').style.display = e.target.value === 'si' ? 'flex' : 'none';
+    const si = e.target.value === 'si';
+    document.getElementById('ing-factura-venc').style.display = si ? 'flex' : 'none';
+    document.getElementById('ing-factura-num').style.display = si ? 'flex' : 'none';
   }
-  if (e.target.id === 'ing-cliente') autoSuggestFactura();
 });
 
 async function fillBarrilesSelect(selectId, estadoFilter) {
