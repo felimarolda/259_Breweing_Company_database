@@ -247,6 +247,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <div class="nav-item" id="nav-produccion" onclick="navTo('produccion')"><span class="nav-icon">⚗</span> Producción</div>
     <div class="nav-item" id="nav-inventario" onclick="navTo('inventario')"><span class="nav-icon">▦</span> Inventario</div>
     <div class="nav-item" id="nav-recetas" onclick="navTo('recetas')"><span class="nav-icon">✦</span> Recetas</div>
+    <div class="nav-section">Comercial</div>
+    <div class="nav-item" id="nav-clientes" onclick="navTo('clientes')"><span class="nav-icon">👥</span> Clientes</div>
+    <div class="nav-item" id="nav-precios" onclick="navTo('precios')"><span class="nav-icon">💲</span> Listas de precios</div>
+    <div class="nav-item" id="nav-barriles" onclick="navTo('barriles')"><span class="nav-icon">🍺</span> Barriles</div>
+    <div class="nav-item" id="nav-cobros" onclick="navTo('cobros')"><span class="nav-icon">📑</span> Cuentas por cobrar</div>
     <div class="nav-section">Finanzas</div>
     <div class="nav-item" id="nav-finanzas" onclick="navTo('finanzas')"><span class="nav-icon">◎</span> Gastos e ingresos</div>
     <div class="nav-section">Datos</div>
@@ -318,15 +323,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <!-- FINANZAS -->
     <div class="page" id="page-finanzas">
       <div class="page-hd">
-        <div><div class="page-title">Gastos e ingresos</div><div class="page-sub">este mes</div></div>
+        <div><div class="page-title">Gastos e ingresos</div></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost btn-sm" onclick="openModal('modal-gasto')">+ Gasto</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-ingreso')">+ Ingreso</button>
         </div>
       </div>
       <div class="grid2">
-        <div class="stat-card"><div class="stat-label">Ingresos del mes</div><div class="stat-val stat-ok" id="fin-ingresos">$0</div></div>
-        <div class="stat-card"><div class="stat-label">Gastos del mes</div><div class="stat-val stat-danger" id="fin-gastos">$0</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px;">
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="dia" onclick="setPeriodo('dia')">Hoy</button>
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="semana" onclick="setPeriodo('semana')">Semana</button>
+          <button class="btn btn-primary btn-sm periodo-btn active" data-p="mes" onclick="setPeriodo('mes')">Este mes</button>
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="anio" onclick="setPeriodo('anio')">Este año</button>
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="todo" onclick="setPeriodo('todo')">Todo</button>
+        </div>
+        <div class="grid2">
+        <div class="stat-card"><div class="stat-label" id="fin-ing-label">Ingresos</div><div class="stat-val stat-ok" id="fin-ingresos">$0</div></div>
+        <div class="stat-card"><div class="stat-label" id="fin-gas-label">Gastos</div><div class="stat-val stat-danger" id="fin-gastos">$0</div></div>
+        </div>
       </div>
       <div class="card"><div class="card-title">Movimientos</div><div id="fin-list"><div class="loading">cargando...</div></div></div>
     </div>
@@ -340,6 +354,63 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       </div>
     </div>
 
+
+
+    <!-- CLIENTES -->
+    <div class="page" id="page-clientes">
+      <div class="page-hd">
+        <div><div class="page-title">Clientes</div><div class="page-sub">razones sociales, contactos y condiciones</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-cliente')">+ Nuevo cliente</button>
+      </div>
+      <div class="card"><div id="clientes-list"><div class="loading">cargando...</div></div></div>
+    </div>
+
+    <!-- LISTAS DE PRECIOS -->
+    <div class="page" id="page-precios">
+      <div class="page-hd">
+        <div><div class="page-title">Listas de precios</div><div class="page-sub">minorista, mayorista, especiales</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-precio')">+ Agregar precio</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="precioTab(this,'minorista')">Minorista</div>
+        <div class="tab" onclick="precioTab(this,'mayorista')">Mayorista</div>
+        <div class="tab" onclick="precioTab(this,'especial')">Especial</div>
+      </div>
+      <div id="precios-activo"><div class="card"><div id="precios-list"><div class="loading">cargando...</div></div></div></div>
+    </div>
+
+    <!-- BARRILES -->
+    <div class="page" id="page-barriles">
+      <div class="page-hd">
+        <div><div class="page-title">Barriles</div><div class="page-sub">seguimiento y estado de cada barril</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-barril')">+ Registrar barril</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="barrilTab(this,'todos')">Todos</div>
+        <div class="tab" onclick="barrilTab(this,'entregados')">En cliente</div>
+        <div class="tab" onclick="barrilTab(this,'deposito')">En depósito</div>
+        <div class="tab" onclick="barrilTab(this,'vacios')">Vacíos devueltos</div>
+      </div>
+      <div id="barriles-tabla"><div class="card"><div id="barriles-list"><div class="loading">cargando...</div></div></div></div>
+    </div>
+
+    <!-- CUENTAS POR COBRAR -->
+    <div class="page" id="page-cobros">
+      <div class="page-hd">
+        <div><div class="page-title">Cuentas por cobrar</div><div class="page-sub">facturas pendientes y vencidas</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-factura')">+ Cargar factura</button>
+      </div>
+      <div class="grid2" style="margin-bottom:0">
+        <div class="stat-card"><div class="stat-label">Total por cobrar</div><div class="stat-val" id="cobros-total">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Vencidas</div><div class="stat-val stat-danger" id="cobros-vencidas">$0</div><div class="stat-note" id="cobros-venc-note"></div></div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="cobrosTab(this,'pendientes')">Pendientes</div>
+        <div class="tab" onclick="cobrosTab(this,'vencidas')">Vencidas</div>
+        <div class="tab" onclick="cobrosTab(this,'cobradas')">Cobradas</div>
+      </div>
+      <div id="cobros-activo"><div class="card"><div id="cobros-list"><div class="loading">cargando...</div></div></div></div>
+    </div>
 
     <!-- AYUDA -->
     <div class="page" id="page-ayuda">
@@ -678,6 +749,199 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   </div>
 </div>
 
+
+<!-- CLIENTE -->
+<div class="modal-ov" id="modal-cliente">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-hd"><div class="modal-title" id="cli-modal-title">Nuevo cliente</div><button class="modal-close" onclick="closeModal('modal-cliente')">×</button></div>
+    <input type="hidden" id="cli-id">
+    <div class="form-grid">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Razón social</label><input class="form-input" id="cli-razon" placeholder="Ej: Bar La Ruta S.R.L."></div>
+        <div class="form-group"><label class="form-label">Nombre de fantasía</label><input class="form-input" id="cli-fantasia" placeholder="Ej: Bar La Ruta"></div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">CUIT</label><input class="form-input" id="cli-cuit" placeholder="20-12345678-9"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="cli-telefono" placeholder="+54 9 280..."></div>
+      </div>
+      <div class="form-group"><label class="form-label">Domicilio</label><input class="form-input" id="cli-domicilio" placeholder="Av. San Martín 123, Trevelin"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="cli-email" type="email" placeholder="contacto@bar.com"></div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Forma de pago</label>
+          <select class="form-select" id="cli-forma">
+            <option value="contado">Contado</option>
+            <option value="cuenta_corriente">Cuenta corriente</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Plazo de pago (días)</label>
+          <input class="form-input" id="cli-plazo" type="number" min="0" placeholder="0 = contado">
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Lista de precios asignada</label>
+        <select class="form-select" id="cli-lista">
+          <option value="minorista">Minorista</option>
+          <option value="mayorista">Mayorista</option>
+          <option value="especial">Especial</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="cli-notas" placeholder="Observaciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCliente()">Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRECIO -->
+<div class="modal-ov" id="modal-precio">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-hd"><div class="modal-title">Agregar precio</div><button class="modal-close" onclick="closeModal('modal-precio')">×</button></div>
+    <input type="hidden" id="prec-id">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Producto</label><input class="form-input" id="prec-producto" placeholder="Ej: IPA Patagónica — barril 30L"></div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Lista</label>
+          <select class="form-select" id="prec-lista">
+            <option value="minorista">Minorista</option>
+            <option value="mayorista">Mayorista</option>
+            <option value="especial">Especial</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Precio ($)</label><input class="form-input" id="prec-precio" type="number" min="0" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Unidad</label>
+        <select class="form-select" id="prec-unidad">
+          <option value="barril">Por barril</option>
+          <option value="lata">Por lata</option>
+          <option value="botella">Por botella</option>
+          <option value="litro">Por litro</option>
+          <option value="pack">Por pack</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Vigente desde</label><input class="form-input" id="prec-fecha" type="date"></div>
+      <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="prec-notas" placeholder="Aclaraciones..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-precio')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePrecio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BARRIL -->
+<div class="modal-ov" id="modal-barril">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hd"><div class="modal-title" id="barril-modal-title">Registrar barril</div><button class="modal-close" onclick="closeModal('modal-barril')">×</button></div>
+    <input type="hidden" id="barril-id">
+    <div class="form-grid">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Número de barril</label><input class="form-input" id="barril-numero" placeholder="Ej: B-001"></div>
+        <div class="form-group"><label class="form-label">Capacidad (litros)</label>
+          <select class="form-select" id="barril-cap">
+            <option value="20">20 L</option>
+            <option value="30" selected>30 L</option>
+            <option value="50">50 L</option>
+            <option value="10">10 L</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Estado</label>
+        <select class="form-select" id="barril-estado" onchange="toggleBarrilFields()">
+          <option value="deposito">En depósito (lleno)</option>
+          <option value="entregado">Entregado a cliente</option>
+          <option value="vacio">Vacío devuelto</option>
+          <option value="limpieza">En limpieza</option>
+        </select>
+      </div>
+      <div id="barril-cerveza-row" class="form-group"><label class="form-label">Cerveza que contiene</label>
+        <select class="form-select" id="barril-cerveza">
+          <option value="">Sin cerveza / vacío</option>
+        </select>
+      </div>
+      <div id="barril-cliente-row" class="form-group" style="display:none"><label class="form-label">Cliente</label>
+        <select class="form-select" id="barril-cliente">
+          <option value="">Seleccionar cliente...</option>
+        </select>
+      </div>
+      <div id="barril-fecha-entrega-row" class="form-group" style="display:none"><label class="form-label">Fecha de entrega</label>
+        <input class="form-input" id="barril-fecha-entrega" type="date">
+      </div>
+      <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="barril-notas" placeholder="Observaciones..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-barril')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBarril()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- FACTURA/COBRO -->
+<div class="modal-ov" id="modal-factura">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-hd"><div class="modal-title">Cargar factura / cuenta por cobrar</div><button class="modal-close" onclick="closeModal('modal-factura')">×</button></div>
+    <input type="hidden" id="fac-id">
+    <div class="form-grid">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Número de factura</label><input class="form-input" id="fac-numero" placeholder="0001-00000123"></div>
+        <div class="form-group"><label class="form-label">Cliente</label>
+          <select class="form-select" id="fac-cliente">
+            <option value="">Seleccionar...</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" id="fac-monto" type="number" min="0" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Fecha de emisión</label><input class="form-input" id="fac-fecha" type="date"></div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Fecha de vencimiento</label><input class="form-input" id="fac-vencimiento" type="date"></div>
+        <div class="form-group"><label class="form-label">Estado</label>
+          <select class="form-select" id="fac-estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="cobrada">Cobrada</option>
+            <option value="vencida">Vencida</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="fac-desc" placeholder="Ej: Venta 10 barriles IPA"></div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="fac-notas" placeholder="Observaciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-factura')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFactura()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETALLE CLIENTE -->
+<div class="modal-ov" id="modal-cli-detail">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-hd"><div class="modal-title" id="cli-det-nombre">—</div><button class="modal-close" onclick="closeModal('modal-cli-detail')">×</button></div>
+    <div id="cli-det-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="cli-del-btn">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-cli-detail')">Cerrar</button>
+      <button class="btn btn-primary" id="cli-edit-btn">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETALLE BARRIL -->
+<div class="modal-ov" id="modal-barril-detail">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hd"><div class="modal-title" id="bd-titulo">—</div><button class="modal-close" onclick="closeModal('modal-barril-detail')">×</button></div>
+    <div id="bd-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="bd-del-btn">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-barril-detail')">Cerrar</button>
+      <button class="btn btn-primary" id="bd-edit-btn">Actualizar estado</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ JAVASCRIPT ════════════════════════════════════════ -->
 <script>
 const SUPABASE_URL = 'https://dlzbawdooijbcsilkgsz.supabase.co';
@@ -758,7 +1022,11 @@ function renderPage(p) {
   if (p === 'recetas')    renderRecetas();
   if (p === 'finanzas')   renderFinanzas();
   if (p === 'config')     renderConfig();
-  if (p === 'ayuda')      {} // static page, no render needed
+  if (p === 'ayuda')      {}
+  if (p === 'clientes')   renderClientes();
+  if (p === 'precios')    renderPrecios();
+  if (p === 'barriles')   renderBarriles();
+  if (p === 'cobros')     renderCobros();
 }
 
 // ── MODALS ────────────────────────────────────────────
@@ -768,6 +1036,10 @@ async function openModal(id) {
   if (id === 'modal-envasar'){ await fillLotesListosSelect(); document.getElementById('env-fecha').value = today(); }
   if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); }
   if (id === 'modal-gasto')  { document.getElementById('gasto-fecha').value = today(); }
+  if (id === 'modal-factura') { document.getElementById('fac-fecha').value = today(); await fillClientesSelect('fac-cliente'); document.getElementById('fac-id').value=''; }
+  if (id === 'modal-barril')  { await fillClientesSelect('barril-cliente'); toggleBarrilFields(); document.getElementById('barril-id').value=''; document.getElementById('barril-modal-title').textContent='Registrar barril'; }
+  if (id === 'modal-cliente') { document.getElementById('cli-id').value=''; document.getElementById('cli-modal-title').textContent='Nuevo cliente'; ['cli-razon','cli-fantasia','cli-cuit','cli-telefono','cli-domicilio','cli-email','cli-notas'].forEach(x=>document.getElementById(x).value=''); document.getElementById('cli-plazo').value=0; }
+  if (id === 'modal-precio')  { document.getElementById('prec-id').value=''; document.getElementById('prec-fecha').value=today(); }
   document.getElementById(id).classList.add('open');
 }
 function openQA() { openModal('modal-qa'); }
@@ -1222,17 +1494,21 @@ async function openRecetaDetail(id) {
 
 async function renderFinanzas() {
   const { data: fin } = await sb.from('finanzas').select('*').order('fecha',{ascending:false});
-  const mes = new Date().getMonth(); const ano = new Date().getFullYear();
-  const finMes = (fin||[]).filter(f=>{const d=new Date(f.fecha);return d.getMonth()===mes&&d.getFullYear()===ano;});
-  const ing = finMes.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
-  const gas = finMes.filter(f=>f.tipo==='gasto').reduce((s,f)=>s+f.monto,0);
+  const filtered = filtrarPorPeriodo(fin||[], 'fecha');
+  const periodoLabel = {dia:'hoy',semana:'esta semana',mes:'este mes',anio:'este año',todo:'histórico'};
+  const lbl = periodoLabel[window._finPeriodo||'mes'];
+  if(document.getElementById('fin-ing-label')) document.getElementById('fin-ing-label').textContent = 'Ingresos — '+lbl;
+  if(document.getElementById('fin-gas-label')) document.getElementById('fin-gas-label').textContent = 'Gastos — '+lbl;
+  const ing = filtered.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
+  const gas = filtered.filter(f=>f.tipo==='gasto').reduce((s,f)=>s+f.monto,0);
   document.getElementById('fin-ingresos').textContent = fmtMoney(ing);
   document.getElementById('fin-gastos').textContent = fmtMoney(gas);
+  const fin2 = filtered;
   const list = document.getElementById('fin-list');
-  if (!fin||!fin.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin movimientos financieros</div></div>'; return; }
+  if (!fin2||!fin2.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin movimientos financieros</div></div>'; return; }
   const icons = { insumos:'📦',energia:'⚡',equipamiento:'🔧',logistica:'🚚',otros:'📋',venta_barril:'🍺',venta_lata:'🥫',venta_botella:'🍾',otro:'💰' };
   list.innerHTML = '<table class="tbl"><thead><tr><th>Cat.</th><th>Descripción</th><th>Usuario</th><th>Fecha</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
-    fin.map(f=>`<tr>
+    fin2.map(f=>`<tr>
       <td>${icons[f.categoria||'']||'💸'}</td>
       <td>${f.descripcion}</td>
       <td class="muted">${f.usuario||'—'}</td>
@@ -1259,6 +1535,372 @@ async function renderConfig() {
 
 async function delFerm(id) { if(!confirm('¿Eliminar?'))return; await sb.from('fermentadores').delete().eq('id',id); renderConfig(); }
 async function delTipo(id) { if(!confirm('¿Eliminar?'))return; await sb.from('tipos').delete().eq('id',id); renderConfig(); }
+
+
+// ── PERIODO FILTER ──────────────────────────────────
+window._finPeriodo = 'mes';
+function setPeriodo(p) {
+  window._finPeriodo = p;
+  document.querySelectorAll('.periodo-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+  renderFinanzas();
+}
+
+function filtrarPorPeriodo(arr, campo) {
+  const hoy = new Date(); const p = window._finPeriodo;
+  return arr.filter(f => {
+    const d = new Date(f[campo]);
+    if (p === 'dia')   return d.toDateString() === hoy.toDateString();
+    if (p === 'semana'){ const s=new Date(hoy);s.setDate(hoy.getDate()-7);return d>=s; }
+    if (p === 'mes')   return d.getMonth()===hoy.getMonth()&&d.getFullYear()===hoy.getFullYear();
+    if (p === 'anio')  return d.getFullYear()===hoy.getFullYear();
+    return true; // siempre
+  });
+}
+
+// ── CLIENTES ────────────────────────────────────────
+async function saveCliente() {
+  const razon = document.getElementById('cli-razon').value.trim();
+  if (!razon) { showToast('Ingresá la razón social'); return; }
+  const id = document.getElementById('cli-id').value;
+  const data = {
+    razon_social: razon,
+    nombre_fantasia: document.getElementById('cli-fantasia').value.trim(),
+    cuit: document.getElementById('cli-cuit').value.trim(),
+    telefono: document.getElementById('cli-telefono').value.trim(),
+    domicilio: document.getElementById('cli-domicilio').value.trim(),
+    email: document.getElementById('cli-email').value.trim(),
+    forma_pago: document.getElementById('cli-forma').value,
+    plazo_pago: parseInt(document.getElementById('cli-plazo').value)||0,
+    lista_precios: document.getElementById('cli-lista').value,
+    notas: document.getElementById('cli-notas').value.trim(),
+    usuario: window._currentUser||'',
+  };
+  if (id) {
+    await sb.from('clientes').update(data).eq('id', parseInt(id));
+  } else {
+    await sb.from('clientes').insert(data);
+  }
+  closeModal('modal-cliente'); showToast('✓ Cliente guardado'); renderClientes();
+}
+
+async function renderClientes() {
+  const { data } = await sb.from('clientes').select('*').order('razon_social');
+  const el = document.getElementById('clientes-list');
+  if (!data||!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">Sin clientes cargados</div></div>'; return; }
+  const formaMap = { contado:'Contado', cuenta_corriente:'Cta. Cte.', transferencia:'Transferencia', cheque:'Cheque' };
+  const listaMap = { minorista:'badge-gray', mayorista:'badge-teal', especial:'badge-gold' };
+  el.innerHTML = '<table class="tbl"><thead><tr><th>Razón social</th><th>Fantasía</th><th>CUIT</th><th>Teléfono</th><th>Pago</th><th>Lista</th><th></th></tr></thead><tbody>' +
+    data.map(c => `<tr>
+      <td style="font-weight:500">${c.razon_social}</td>
+      <td class="muted">${c.nombre_fantasia||'—'}</td>
+      <td class="muted">${c.cuit||'—'}</td>
+      <td class="muted">${c.telefono||'—'}</td>
+      <td>${formaMap[c.forma_pago]||c.forma_pago}${c.plazo_pago>0?' ('+c.plazo_pago+'d)':''}</td>
+      <td><span class="badge ${listaMap[c.lista_precios]||'badge-gray'}">${c.lista_precios||'—'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openClienteDetail(${c.id})">Ver</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+async function openClienteDetail(id) {
+  const { data: c } = await sb.from('clientes').select('*').eq('id', id).single();
+  const { data: facs } = await sb.from('facturas').select('*').eq('cliente_id', id).order('fecha_emision',{ascending:false});
+  document.getElementById('cli-det-nombre').textContent = c.nombre_fantasia || c.razon_social;
+  const formaMap = { contado:'Contado', cuenta_corriente:'Cuenta corriente', transferencia:'Transferencia', cheque:'Cheque' };
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+    <div><div class="form-label">Razón social</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.razon_social}</div></div>
+    <div><div class="form-label">CUIT</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.cuit||'—'}</div></div>
+    <div><div class="form-label">Teléfono</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.telefono||'—'}</div></div>
+    <div><div class="form-label">Email</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.email||'—'}</div></div>
+    <div><div class="form-label">Domicilio</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.domicilio||'—'}</div></div>
+    <div><div class="form-label">Forma de pago</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${formaMap[c.forma_pago]||c.forma_pago}${c.plazo_pago>0?' — '+c.plazo_pago+' días':''}</div></div>
+  </div>`;
+  if (c.notas) html += `<div class="alert" style="margin-bottom:12px">${c.notas}</div>`;
+  if (facs&&facs.length) {
+    const pendiente = facs.filter(f=>f.estado==='pendiente'||f.estado==='vencida').reduce((s,f)=>s+f.monto,0);
+    html += `<div class="card-title" style="margin-bottom:8px">Facturas — deuda total: <strong style="color:var(--red2)">${fmtMoney(pendiente)}</strong></div>`;
+    html += '<table class="tbl"><thead><tr><th>Nro</th><th>Monto</th><th>Vence</th><th>Estado</th></tr></thead><tbody>' +
+      facs.slice(0,5).map(f=>`<tr><td class="muted">${f.numero||'—'}</td><td>${fmtMoney(f.monto)}</td><td class="muted">${f.fecha_vencimiento||'—'}</td><td>${facEstBadge(f.estado)}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+  document.getElementById('cli-det-content').innerHTML = html;
+  document.getElementById('cli-del-btn').onclick = async () => {
+    if (!confirm('¿Eliminar cliente "'+c.razon_social+'"?')) return;
+    await sb.from('clientes').delete().eq('id', id);
+    closeModal('modal-cli-detail'); showToast('Cliente eliminado'); renderClientes();
+  };
+  document.getElementById('cli-edit-btn').onclick = () => {
+    closeModal('modal-cli-detail'); openEditCliente(c);
+  };
+  document.getElementById('modal-cli-detail').classList.add('open');
+}
+
+function openEditCliente(c) {
+  document.getElementById('cli-modal-title').textContent = 'Editar cliente';
+  document.getElementById('cli-id').value = c.id;
+  document.getElementById('cli-razon').value = c.razon_social||'';
+  document.getElementById('cli-fantasia').value = c.nombre_fantasia||'';
+  document.getElementById('cli-cuit').value = c.cuit||'';
+  document.getElementById('cli-telefono').value = c.telefono||'';
+  document.getElementById('cli-domicilio').value = c.domicilio||'';
+  document.getElementById('cli-email').value = c.email||'';
+  document.getElementById('cli-forma').value = c.forma_pago||'contado';
+  document.getElementById('cli-plazo').value = c.plazo_pago||0;
+  document.getElementById('cli-lista').value = c.lista_precios||'minorista';
+  document.getElementById('cli-notas').value = c.notas||'';
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+// ── PRECIOS ─────────────────────────────────────────
+let _precioTabActiva = 'minorista';
+function precioTab(el, lista) {
+  document.querySelectorAll('#page-precios .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  _precioTabActiva = lista;
+  renderPrecios();
+}
+
+async function savePrecio() {
+  const producto = document.getElementById('prec-producto').value.trim();
+  const precio = parseFloat(document.getElementById('prec-precio').value);
+  if (!producto||!precio) { showToast('Completá producto y precio'); return; }
+  const id = document.getElementById('prec-id').value;
+  const data = {
+    producto, lista: document.getElementById('prec-lista').value,
+    precio, unidad: document.getElementById('prec-unidad').value,
+    vigente_desde: document.getElementById('prec-fecha').value||today(),
+    notas: document.getElementById('prec-notas').value.trim(),
+    usuario: window._currentUser||'',
+  };
+  if (id) await sb.from('precios').update(data).eq('id',parseInt(id));
+  else await sb.from('precios').insert(data);
+  closeModal('modal-precio'); showToast('✓ Precio guardado'); renderPrecios();
+}
+
+async function renderPrecios() {
+  const { data } = await sb.from('precios').select('*').eq('lista', _precioTabActiva).order('producto');
+  const el = document.getElementById('precios-list');
+  if (!data||!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">💲</div><div class="empty-text">Sin precios en esta lista</div><div class="empty-sub">Agregá precios con el botón + Agregar precio</div></div>'; return; }
+  el.innerHTML = '<table class="tbl"><thead><tr><th>Producto</th><th>Unidad</th><th>Precio</th><th>Vigente desde</th><th>Notas</th><th></th></tr></thead><tbody>' +
+    data.map(p=>`<tr>
+      <td style="font-weight:500">${p.producto}</td>
+      <td class="muted">${p.unidad}</td>
+      <td><span style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--gold)">${fmtMoney(p.precio)}</span></td>
+      <td class="muted">${p.vigente_desde||'—'}</td>
+      <td class="muted">${p.notas||'—'}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="editPrecio(${p.id})">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="delPrecio(${p.id})">✕</button>
+      </td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+async function editPrecio(id) {
+  const { data: p } = await sb.from('precios').select('*').eq('id',id).single();
+  document.getElementById('prec-id').value = p.id;
+  document.getElementById('prec-producto').value = p.producto;
+  document.getElementById('prec-lista').value = p.lista;
+  document.getElementById('prec-precio').value = p.precio;
+  document.getElementById('prec-unidad').value = p.unidad;
+  document.getElementById('prec-fecha').value = p.vigente_desde||'';
+  document.getElementById('prec-notas').value = p.notas||'';
+  document.getElementById('modal-precio').classList.add('open');
+}
+
+async function delPrecio(id) {
+  if (!confirm('¿Eliminar este precio?')) return;
+  await sb.from('precios').delete().eq('id',id);
+  showToast('Eliminado'); renderPrecios();
+}
+
+// ── BARRILES ────────────────────────────────────────
+let _barrilTab = 'todos';
+function barrilTab(el, tab) {
+  document.querySelectorAll('#page-barriles .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  _barrilTab = tab;
+  renderBarriles();
+}
+
+function toggleBarrilFields() {
+  const estado = document.getElementById('barril-estado').value;
+  document.getElementById('barril-cliente-row').style.display = estado==='entregado'?'flex':'none';
+  document.getElementById('barril-fecha-entrega-row').style.display = estado==='entregado'?'flex':'none';
+}
+
+async function fillClientesSelect(selectId) {
+  const { data } = await sb.from('clientes').select('id,razon_social,nombre_fantasia').order('razon_social');
+  const sel = document.getElementById(selectId);
+  const first = sel.options[0].outerHTML;
+  sel.innerHTML = first;
+  (data||[]).forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre_fantasia||c.razon_social}</option>`);
+}
+
+async function saveBarril() {
+  const numero = document.getElementById('barril-numero').value.trim();
+  if (!numero) { showToast('Ingresá el número de barril'); return; }
+  const id = document.getElementById('barril-id').value;
+  const estado = document.getElementById('barril-estado').value;
+  const data = {
+    numero, capacidad: parseInt(document.getElementById('barril-cap').value)||30,
+    estado,
+    producto_id: parseInt(document.getElementById('barril-cerveza').value)||null,
+    cliente_id: estado==='entregado'?parseInt(document.getElementById('barril-cliente').value)||null:null,
+    fecha_entrega: estado==='entregado'?document.getElementById('barril-fecha-entrega').value||null:null,
+    notas: document.getElementById('barril-notas').value.trim(),
+    usuario: window._currentUser||'',
+  };
+  if (id) await sb.from('barriles').update(data).eq('id',parseInt(id));
+  else await sb.from('barriles').insert(data);
+  closeModal('modal-barril'); showToast('✓ Barril guardado'); renderBarriles();
+}
+
+async function renderBarriles() {
+  let query = sb.from('barriles').select('*, clientes(nombre_fantasia,razon_social)').order('numero');
+  if (_barrilTab==='entregados') query = query.eq('estado','entregado');
+  else if (_barrilTab==='deposito') query = query.eq('estado','deposito');
+  else if (_barrilTab==='vacios') query = query.eq('estado','vacio');
+  const { data } = await query;
+  const el = document.getElementById('barriles-list');
+  if (!data||!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🍺</div><div class="empty-text">Sin barriles en esta categoría</div></div>'; return; }
+  const estMap = { deposito:'<span class="badge badge-green">En depósito</span>', entregado:'<span class="badge badge-amber">En cliente</span>', vacio:'<span class="badge badge-gray">Vacío</span>', limpieza:'<span class="badge badge-teal">En limpieza</span>' };
+  el.innerHTML = '<table class="tbl"><thead><tr><th>Nro</th><th>Cap.</th><th>Cerveza</th><th>Cliente</th><th>Entrega</th><th>Estado</th><th></th></tr></thead><tbody>' +
+    data.map(b=>`<tr>
+      <td style="font-weight:700;font-family:var(--font-d)">${b.numero}</td>
+      <td class="muted">${b.capacidad}L</td>
+      <td class="muted">${b.producto_id?'cargado':'—'}</td>
+      <td>${b.clientes?(b.clientes.nombre_fantasia||b.clientes.razon_social):'—'}</td>
+      <td class="muted">${b.fecha_entrega||'—'}</td>
+      <td>${estMap[b.estado]||b.estado}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openBarrilDetail(${b.id})">Ver</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+async function openBarrilDetail(id) {
+  const { data: b } = await sb.from('barriles').select('*, clientes(nombre_fantasia,razon_social)').eq('id',id).single();
+  document.getElementById('bd-titulo').textContent = 'Barril ' + b.numero;
+  const estMap = { deposito:'En depósito (lleno)', entregado:'Entregado a cliente', vacio:'Vacío devuelto', limpieza:'En limpieza' };
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+    <div><div class="form-label">Número</div><div style="font-family:var(--font-d);font-size:20px;font-weight:700;color:var(--cream)">${b.numero}</div></div>
+    <div><div class="form-label">Capacidad</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${b.capacidad} litros</div></div>
+    <div><div class="form-label">Estado</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${estMap[b.estado]||b.estado}</div></div>
+    <div><div class="form-label">Cliente</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${b.clientes?(b.clientes.nombre_fantasia||b.clientes.razon_social):'—'}</div></div>
+    ${b.fecha_entrega?`<div><div class="form-label">Fecha entrega</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${b.fecha_entrega}</div></div>`:''}
+    ${b.notas?`<div style="grid-column:1/-1"><div class="form-label">Notas</div><div style="font-family:var(--font-b);font-size:14px;color:var(--muted)">${b.notas}</div></div>`:''}
+  </div>`;
+  document.getElementById('bd-content').innerHTML = html;
+  document.getElementById('bd-del-btn').onclick = async () => {
+    if (!confirm('¿Eliminar barril '+b.numero+'?')) return;
+    await sb.from('barriles').delete().eq('id',id);
+    closeModal('modal-barril-detail'); showToast('Barril eliminado'); renderBarriles();
+  };
+  document.getElementById('bd-edit-btn').onclick = async () => {
+    closeModal('modal-barril-detail');
+    document.getElementById('barril-modal-title').textContent = 'Actualizar barril '+b.numero;
+    document.getElementById('barril-id').value = b.id;
+    document.getElementById('barril-numero').value = b.numero;
+    document.getElementById('barril-cap').value = b.capacidad;
+    document.getElementById('barril-estado').value = b.estado;
+    document.getElementById('barril-notas').value = b.notas||'';
+    await fillClientesSelect('barril-cliente');
+    if (b.cliente_id) document.getElementById('barril-cliente').value = b.cliente_id;
+    if (b.fecha_entrega) document.getElementById('barril-fecha-entrega').value = b.fecha_entrega;
+    toggleBarrilFields();
+    document.getElementById('modal-barril').classList.add('open');
+  };
+  document.getElementById('modal-barril-detail').classList.add('open');
+}
+
+// ── FACTURAS / COBROS ───────────────────────────────
+let _cobrosTab = 'pendientes';
+function cobrosTab(el, tab) {
+  document.querySelectorAll('#page-cobros .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  _cobrosTab = tab;
+  renderCobros();
+}
+
+function facEstBadge(e) {
+  if (e==='pendiente') return '<span class="badge badge-amber">Pendiente</span>';
+  if (e==='vencida')   return '<span class="badge badge-red">Vencida</span>';
+  if (e==='cobrada')   return '<span class="badge badge-green">Cobrada</span>';
+  return '<span class="badge badge-gray">'+e+'</span>';
+}
+
+async function saveFactura() {
+  const numero = document.getElementById('fac-numero').value.trim();
+  const monto = parseFloat(document.getElementById('fac-monto').value);
+  if (!monto) { showToast('Ingresá el monto'); return; }
+  const id = document.getElementById('fac-id').value;
+  const data = {
+    numero, monto,
+    cliente_id: parseInt(document.getElementById('fac-cliente').value)||null,
+    fecha_emision: document.getElementById('fac-fecha').value||today(),
+    fecha_vencimiento: document.getElementById('fac-vencimiento').value||null,
+    estado: document.getElementById('fac-estado').value,
+    descripcion: document.getElementById('fac-desc').value.trim(),
+    notas: document.getElementById('fac-notas').value.trim(),
+    usuario: window._currentUser||'',
+  };
+  // Auto-marcar vencida
+  if (data.fecha_vencimiento && data.estado==='pendiente') {
+    if (new Date(data.fecha_vencimiento) < new Date()) data.estado = 'vencida';
+  }
+  if (id) await sb.from('facturas').update(data).eq('id',parseInt(id));
+  else await sb.from('facturas').insert(data);
+  closeModal('modal-factura'); showToast('✓ Factura guardada'); renderCobros();
+}
+
+async function renderCobros() {
+  // Auto-update vencidas
+  const hoy = today();
+  await sb.from('facturas').update({estado:'vencida'}).eq('estado','pendiente').lt('fecha_vencimiento', hoy);
+
+  const { data: all } = await sb.from('facturas').select('*, clientes(nombre_fantasia,razon_social)').order('fecha_vencimiento',{ascending:true});
+  const pendientes = (all||[]).filter(f=>f.estado==='pendiente');
+  const vencidas   = (all||[]).filter(f=>f.estado==='vencida');
+  const cobradas   = (all||[]).filter(f=>f.estado==='cobrada');
+
+  const totalPend = [...pendientes,...vencidas].reduce((s,f)=>s+f.monto,0);
+  const totalVenc = vencidas.reduce((s,f)=>s+f.monto,0);
+  document.getElementById('cobros-total').textContent = fmtMoney(totalPend);
+  document.getElementById('cobros-total').className = 'stat-val ' + (totalPend>0?'stat-warn':'stat-ok');
+  document.getElementById('cobros-vencidas').textContent = fmtMoney(totalVenc);
+  document.getElementById('cobros-venc-note').textContent = vencidas.length + ' factura' + (vencidas.length===1?'':'s') + ' vencida'+(vencidas.length===1?'':'s');
+
+  const map = { pendientes, vencidas, cobradas };
+  const lista = map[_cobrosTab] || [];
+  const el = document.getElementById('cobros-list');
+  if (!lista.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📑</div><div class="empty-text">Sin facturas en esta categoría</div></div>'; return; }
+
+  el.innerHTML = '<table class="tbl"><thead><tr><th>Nro</th><th>Cliente</th><th>Monto</th><th>Emisión</th><th>Vencimiento</th><th>Estado</th><th></th></tr></thead><tbody>' +
+    lista.map(f => {
+      const dias = f.fecha_vencimiento ? Math.ceil((new Date(f.fecha_vencimiento)-new Date())/(86400000)) : null;
+      const diasStr = dias!==null ? (dias<0?`<span style="color:var(--red2)">${Math.abs(dias)}d vencida</span>`:`<span style="color:var(--amber)">${dias}d restantes</span>`) : '—';
+      return `<tr>
+        <td class="muted">${f.numero||'—'}</td>
+        <td>${f.clientes?(f.clientes.nombre_fantasia||f.clientes.razon_social):'—'}</td>
+        <td style="font-family:var(--font-d);font-size:16px;font-weight:700">${fmtMoney(f.monto)}</td>
+        <td class="muted">${f.fecha_emision||'—'}</td>
+        <td>${diasStr}</td>
+        <td>${facEstBadge(f.estado)}</td>
+        <td style="display:flex;gap:4px;">
+          ${f.estado!=='cobrada'?`<button class="btn btn-primary btn-sm" onclick="marcarCobrada(${f.id})">✓ Cobrar</button>`:''}
+          <button class="btn btn-danger btn-sm" onclick="delFactura(${f.id})">✕</button>
+        </td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+async function marcarCobrada(id) {
+  await sb.from('facturas').update({estado:'cobrada'}).eq('id',id);
+  showToast('✓ Marcada como cobrada'); renderCobros();
+}
+
+async function delFactura(id) {
+  if (!confirm('¿Eliminar esta factura?')) return;
+  await sb.from('facturas').delete().eq('id',id);
+  showToast('Eliminada'); renderCobros();
+}
 
 // ── START ─────────────────────────────────────────────
 init();
