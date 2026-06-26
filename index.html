@@ -1588,24 +1588,80 @@ function openEditEstado(id, estado) {
   document.getElementById('modal-estado').classList.add('open');
 }
 
+window._insFiltroTipo = '';
+window._insSortField = 'nombre';
+window._insSortDir = 1;
+
+function insSortBy(field) {
+  if (window._insSortField === field) window._insSortDir *= -1;
+  else { window._insSortField = field; window._insSortDir = 1; }
+  renderInventario();
+}
+
+function insFiltroTipo(val) {
+  window._insFiltroTipo = val;
+  renderInventario();
+}
+
 async function renderInventario() {
-  const { data: insumos } = await sb.from('insumos').select('*').order('nombre');
+  const { data: insumos } = await sb.from('insumos').select('*, tipos(nombre)').order('nombre');
   const il = document.getElementById('inv-list-insumos');
   if (!insumos||!insumos.length) { il.innerHTML = '<div class="empty"><div class="empty-icon">▦</div><div class="empty-text">Sin insumos cargados</div></div>'; }
   else {
     const grouped = {};
     insumos.forEach(i => {
       const k = i.nombre.toLowerCase();
-      if (!grouped[k]) grouped[k] = { nombre:i.nombre, unidad:i.unidad, cantidad:0, minimo:i.minimo||0, ultimo:i.fecha };
+      const tipoNombre = i.tipos?.nombre || 'Sin tipo';
+      if (!grouped[k]) grouped[k] = { nombre:i.nombre, unidad:i.unidad, cantidad:0, minimo:i.minimo||0, ultimo:i.fecha, tipo:tipoNombre };
       grouped[k].cantidad += parseFloat(i.cantidad||0);
       if (!grouped[k].minimo && i.minimo) grouped[k].minimo = i.minimo;
     });
-    const rows = Object.values(grouped);
-    il.innerHTML = '<table class="tbl"><thead><tr><th>Insumo</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th><th>Último ingreso</th></tr></thead><tbody>' +
+    let rows = Object.values(grouped);
+
+    // tipos disponibles para el filtro
+    const tiposUnicos = [...new Set(rows.map(r=>r.tipo))].sort();
+    const filtroSel = document.getElementById('ins-filtro-tipo-sel');
+    if (filtroSel) {
+      const current = window._insFiltroTipo;
+      filtroSel.innerHTML = '<option value="">Todos los tipos</option>' + tiposUnicos.map(t=>`<option value="${t}" ${t===current?'selected':''}>${t}</option>`).join('');
+    }
+
+    // aplicar filtro
+    if (window._insFiltroTipo) rows = rows.filter(r => r.tipo === window._insFiltroTipo);
+
+    // aplicar orden
+    const field = window._insSortField; const dir = window._insSortDir;
+    rows.sort((a,b) => {
+      let av = a[field], bv = b[field];
+      if (field==='cantidad'||field==='minimo') { av=parseFloat(av)||0; bv=parseFloat(bv)||0; return (av-bv)*dir; }
+      av = (av||'').toString().toLowerCase(); bv = (bv||'').toString().toLowerCase();
+      return av.localeCompare(bv)*dir;
+    });
+
+    const arrow = (f) => window._insSortField===f ? (window._insSortDir===1?' ▲':' ▼') : '';
+    il.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <label class="form-label" style="margin:0">Filtrar por tipo:</label>
+        <select class="form-select" id="ins-filtro-tipo-sel" onchange="insFiltroTipo(this.value)" style="width:auto;min-width:180px;">
+          <option value="">Todos los tipos</option>
+        </select>
+        ${window._insFiltroTipo ? `<button class="btn btn-ghost btn-sm" onclick="insFiltroTipo('')">✕ Limpiar filtro</button>` : ''}
+      </div>
+      <table class="tbl"><thead><tr>
+        <th style="cursor:pointer" onclick="insSortBy('nombre')">Insumo${arrow('nombre')}</th>
+        <th style="cursor:pointer" onclick="insSortBy('tipo')">Tipo${arrow('tipo')}</th>
+        <th style="cursor:pointer" onclick="insSortBy('cantidad')">Stock actual${arrow('cantidad')}</th>
+        <th style="cursor:pointer" onclick="insSortBy('minimo')">Mínimo${arrow('minimo')}</th>
+        <th>Estado</th>
+        <th style="cursor:pointer" onclick="insSortBy('ultimo')">Último ingreso${arrow('ultimo')}</th>
+      </tr></thead><tbody>` +
       rows.map(i => {
         const low = i.minimo > 0 && i.cantidad < i.minimo;
-        return `<tr><td style="font-weight:500">${i.nombre}</td><td><span class="num ${low?'stat-warn':''}">${i.cantidad.toFixed(1)}</span> <span class="muted">${i.unidad}</span></td><td class="muted">${i.minimo>0?i.minimo+' '+i.unidad:'—'}</td><td>${low?'<span class="badge badge-amber">Stock bajo</span>':'<span class="badge badge-green">OK</span>'}</td><td class="muted">${i.ultimo||'—'}</td></tr>`;
+        return `<tr><td style="font-weight:500">${i.nombre}</td><td><span class="badge badge-teal">${i.tipo}</span></td><td><span class="num ${low?'stat-warn':''}">${i.cantidad.toFixed(1)}</span> <span class="muted">${i.unidad}</span></td><td class="muted">${i.minimo>0?i.minimo+' '+i.unidad:'—'}</td><td>${low?'<span class="badge badge-amber">Stock bajo</span>':'<span class="badge badge-green">OK</span>'}</td><td class="muted">${i.ultimo||'—'}</td></tr>`;
       }).join('') + '</tbody></table>';
+
+    // re-fill select after innerHTML reset
+    const sel2 = document.getElementById('ins-filtro-tipo-sel');
+    if (sel2) sel2.innerHTML = '<option value="">Todos los tipos</option>' + tiposUnicos.map(t=>`<option value="${t}" ${t===window._insFiltroTipo?'selected':''}>${t}</option>`).join('');
   }
 
   const { data: productos } = await sb.from('productos').select('*').order('fecha',{ascending:false});
