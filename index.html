@@ -610,9 +610,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       </div>
       <div id="env-barriles-row" class="form-group">
         <label class="form-label">Barriles a cargar (opcional)</label>
-        <select class="form-select" id="env-barriles" multiple style="height:80px">
-        </select>
-        <div class="form-hint">Seleccioná los barriles vacíos que se llenan con este lote</div>
+        <div id="env-barriles" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;"></div>
+        <div class="form-hint">Tocá los barriles que se llenan con este lote</div>
       </div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Cantidad envasada</label><input class="form-input" id="env-cantidad" type="number" min="0" step="0.1" placeholder="0"></div>
@@ -742,8 +741,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       <!-- BARRILES (solo venta barriles) -->
       <div class="form-group" id="ing-barril-row" style="display:none">
         <label class="form-label">Barriles entregados</label>
-        <select class="form-select" id="ing-barril" multiple style="height:90px"></select>
-        <div class="form-hint">Seleccioná los barriles que salen en esta venta</div>
+        <div id="ing-barril" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;"></div>
+        <div class="form-hint">Tocá los barriles que salen en esta venta</div>
       </div>
 
       <!-- DESCRIPCIÓN -->
@@ -1132,7 +1131,7 @@ async function openModal(id) {
   if (id === 'modal-insumo') await fillTiposSelect('ins-tipo');
   if (id === 'modal-prod')   { await fillRecetasSelect(); await fillFermsSelect(); document.getElementById('prod-fecha').value = today(); }
   if (id === 'modal-envasar'){ await fillLotesListosSelect(); document.getElementById('env-fecha').value = today(); await fillBarrilesSelect('env-barriles','vacio'); toggleEnvBarriles(); }
-  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); await fillClientesSelect('ing-cliente'); await fillBarrilesSelect('ing-barril','deposito'); document.getElementById('ing-gen-factura').value='no'; document.getElementById('ing-factura-venc').style.display='none'; document.getElementById('ing-factura-num').style.display='none'; document.getElementById('ing-producto-row').style.display='none'; document.getElementById('ing-cantidad-row').style.display='none'; document.getElementById('ing-desvio-alert').style.display='none'; document.getElementById('ing-precio-ref').textContent=''; window._precioEsperado=0; toggleIngresoFields(); }
+  if (id === 'modal-ingreso'){ document.getElementById('ing-fecha').value = today(); await fillClientesSelect('ing-cliente'); await fillBarrilesVenta('ing-barril'); document.getElementById('ing-gen-factura').value='no'; document.getElementById('ing-factura-venc').style.display='none'; document.getElementById('ing-factura-num').style.display='none'; document.getElementById('ing-producto-row').style.display='none'; document.getElementById('ing-cantidad-row').style.display='none'; document.getElementById('ing-desvio-alert').style.display='none'; document.getElementById('ing-precio-ref').textContent=''; window._precioEsperado=0; toggleIngresoFields(); }
   if (id === 'modal-gasto')  { document.getElementById('gasto-fecha').value = today(); }
   if (id === 'modal-factura') { document.getElementById('fac-fecha').value = today(); await fillClientesSelect('fac-cliente'); document.getElementById('fac-id').value=''; }
   if (id === 'modal-barril')  { await fillClientesSelect('barril-cliente'); toggleBarrilFields(); document.getElementById('barril-id').value=''; document.getElementById('barril-modal-title').textContent='Registrar barril'; }
@@ -1320,8 +1319,7 @@ async function saveEnvasado() {
   await sb.from('movimientos').insert({ tipo:'envasado', descripcion:'Envasado: '+(lote?.receta_nombre||'')+'→'+cantidad+' '+prod.unidad, cantidad, unidad:prod.unidad, fecha:prod.fecha, usuario: window._currentUser||'' });
   // update selected barriles with this producto
   if (tipo === 'barril' && prodData) {
-    const sel = document.getElementById('env-barriles');
-    const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
+    const ids = getBarrilesSeleccionados('env-barriles');
     for (const bid of ids) {
       await sb.from('barriles').update({ estado:'deposito', producto_id:prodData.id }).eq('id', bid);
     }
@@ -1411,8 +1409,7 @@ async function saveIngreso() {
 
   // update barriles
   if (tipo === 'venta_barril') {
-    const sel = document.getElementById('ing-barril');
-    const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
+    const ids = getBarrilesSeleccionados('ing-barril');
     for (const bid of ids) {
       await sb.from('barriles').update({ estado:'entregado', cliente_id:cliId, fecha_entrega:fecha }).eq('id',bid);
     }
@@ -2247,19 +2244,47 @@ document.addEventListener('change', function(e) {
   }
 });
 
-async function fillBarrilesSelect(selectId, estadoFilter) {
-  let query = sb.from('barriles').select('id,numero,capacidad,estado').order('numero');
-  if (estadoFilter) query = query.eq('estado', estadoFilter);
+async function fillBarrilesSelect(containerId, estadoFilter) {
+  // estadoFilter now means "exclude entregado" — show all available barrels
+  let query = sb.from('barriles').select('id,numero,capacidad,estado').neq('estado','entregado').order('numero');
   const { data } = await query;
-  const sel = document.getElementById(selectId);
-  if (!sel) return;
-  sel.innerHTML = '';
-  (data||[]).forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b.id;
-    opt.textContent = b.numero + ' (' + b.capacidad + 'L) — ' + b.estado;
-    sel.appendChild(opt);
-  });
+  const cont = document.getElementById(containerId);
+  if (!cont) return;
+  const estMap = { deposito:'depósito', vacio:'vacío', limpieza:'limpieza' };
+  if (!data||!data.length) {
+    cont.innerHTML = '<div style="font-family:var(--font-b);font-size:13px;color:var(--muted);font-style:italic;">No hay barriles disponibles. Registralos primero en la sección Barriles.</div>';
+    return;
+  }
+  cont.innerHTML = (data||[]).map(b => `
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 4px;border-radius:6px;transition:background 0.12s;" onmouseover="this.style.background='rgba(74,122,58,0.08)'" onmouseout="this.style.background='transparent'">
+      <input type="checkbox" class="barril-chk" value="${b.id}" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
+      <span style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--cream);">${b.numero}</span>
+      <span style="font-family:var(--font-b);font-size:13px;color:var(--muted);">${b.capacidad}L — ${estMap[b.estado]||b.estado}</span>
+    </label>`).join('');
+}
+
+
+async function fillBarrilesVenta(containerId) {
+  // For sales: show only barrels in deposito (full ones ready to deliver)
+  const { data } = await sb.from('barriles').select('id,numero,capacidad,estado').eq('estado','deposito').order('numero');
+  const cont = document.getElementById(containerId);
+  if (!cont) return;
+  if (!data||!data.length) {
+    cont.innerHTML = '<div style="font-family:var(--font-b);font-size:13px;color:var(--muted);font-style:italic;">No hay barriles llenos en depósito para entregar.</div>';
+    return;
+  }
+  cont.innerHTML = (data||[]).map(b => `
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 4px;border-radius:6px;transition:background 0.12s;" onmouseover="this.style.background='rgba(74,122,58,0.08)'" onmouseout="this.style.background='transparent'">
+      <input type="checkbox" class="barril-chk" value="${b.id}" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
+      <span style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--cream);">${b.numero}</span>
+      <span style="font-family:var(--font-b);font-size:13px;color:var(--muted);">${b.capacidad}L — en depósito</span>
+    </label>`).join('');
+}
+
+function getBarrilesSeleccionados(containerId) {
+  const cont = document.getElementById(containerId);
+  if (!cont) return [];
+  return Array.from(cont.querySelectorAll('.barril-chk:checked')).map(c=>parseInt(c.value));
 }
 
 async function loadPrecioRef() {
