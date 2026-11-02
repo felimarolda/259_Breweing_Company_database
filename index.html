@@ -50,6 +50,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);}
 .btn-ghost:hover{color:var(--gold2);border-color:var(--border3);}
 .btn-sm{padding:6px 10px;font-size:11px;}
+.btn:disabled{opacity:.35;cursor:default;}
 .btn-danger{background:rgba(196,96,80,0.15);color:var(--red2);border:1px solid rgba(196,96,80,0.25);}
 .btn-danger:hover{background:rgba(196,96,80,0.25);}
 .btn-logout{background:transparent;color:var(--muted);border:1px solid var(--border);font-family:var(--font-m);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;}
@@ -331,11 +332,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       </div>
       <div class="grid2">
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px;">
-          <button class="btn btn-ghost btn-sm periodo-btn" data-p="dia" onclick="setPeriodo('dia')">Hoy</button>
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="dia" onclick="setPeriodo('dia')">Día</button>
           <button class="btn btn-ghost btn-sm periodo-btn" data-p="semana" onclick="setPeriodo('semana')">Semana</button>
-          <button class="btn btn-primary btn-sm periodo-btn active" data-p="mes" onclick="setPeriodo('mes')">Este mes</button>
-          <button class="btn btn-ghost btn-sm periodo-btn" data-p="anio" onclick="setPeriodo('anio')">Este año</button>
+          <button class="btn btn-primary btn-sm periodo-btn active" data-p="mes" onclick="setPeriodo('mes')">Mes</button>
+          <button class="btn btn-ghost btn-sm periodo-btn" data-p="anio" onclick="setPeriodo('anio')">Año</button>
           <button class="btn btn-ghost btn-sm periodo-btn" data-p="todo" onclick="setPeriodo('todo')">Todo</button>
+          <div id="periodo-nav" style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+            <button class="btn btn-ghost btn-sm" id="periodo-prev" onclick="movePeriodo(-1)" title="Período anterior">‹</button>
+            <span id="periodo-label" style="font-family:var(--font-b);font-size:13px;color:var(--cream);min-width:130px;text-align:center;"></span>
+            <button class="btn btn-ghost btn-sm" id="periodo-next" onclick="movePeriodo(1)" title="Período siguiente">›</button>
+          </div>
         </div>
         <div class="grid2">
         <div class="stat-card"><div class="stat-label" id="fin-ing-label">Ingresos</div><div class="stat-val stat-ok" id="fin-ingresos">$0</div></div>
@@ -1722,8 +1728,8 @@ async function openRecetaDetail(id) {
 async function renderFinanzas() {
   const { data: fin } = await sb.from('finanzas').select('*').order('fecha',{ascending:false});
   const filtered = filtrarPorPeriodo(fin||[], 'fecha');
-  const periodoLabel = {dia:'hoy',semana:'esta semana',mes:'este mes',anio:'este año',todo:'histórico'};
-  const lbl = periodoLabel[window._finPeriodo||'mes'];
+  const lbl = periodoTexto();
+  updatePeriodoNav(lbl);
   if(document.getElementById('fin-ing-label')) document.getElementById('fin-ing-label').textContent = 'Ingresos — '+lbl;
   if(document.getElementById('fin-gas-label')) document.getElementById('fin-gas-label').textContent = 'Gastos — '+lbl;
   const ing = filtered.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
@@ -1766,22 +1772,78 @@ async function delTipo(id) { if(!confirm('¿Eliminar?'))return; await sb.from('t
 
 // ── PERIODO FILTER ──────────────────────────────────
 window._finPeriodo = 'mes';
+window._finOffset = 0; // 0 = período actual, -1 = anterior, etc.
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
 function setPeriodo(p) {
   window._finPeriodo = p;
-  document.querySelectorAll('.periodo-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+  window._finOffset = 0;
+  document.querySelectorAll('.periodo-btn').forEach(b => {
+    const on = b.dataset.p === p;
+    b.classList.toggle('active', on);
+    b.classList.toggle('btn-primary', on);
+    b.classList.toggle('btn-ghost', !on);
+  });
   renderFinanzas();
 }
 
+function movePeriodo(delta) {
+  const next = (window._finOffset || 0) + delta;
+  if (next > 0) return;
+  window._finOffset = next;
+  renderFinanzas();
+}
+
+// Devuelve [inicio, fin) del período seleccionado, en hora local
+function rangoPeriodo() {
+  const p = window._finPeriodo, o = window._finOffset || 0;
+  const h = new Date(); h.setHours(0,0,0,0);
+  if (p === 'dia') {
+    const ini = new Date(h); ini.setDate(h.getDate() + o);
+    const fin = new Date(ini); fin.setDate(ini.getDate() + 1);
+    return [ini, fin];
+  }
+  if (p === 'semana') { // lunes a domingo
+    const ini = new Date(h); ini.setDate(h.getDate() - ((h.getDay() + 6) % 7) + o * 7);
+    const fin = new Date(ini); fin.setDate(ini.getDate() + 7);
+    return [ini, fin];
+  }
+  if (p === 'mes')  return [new Date(h.getFullYear(), h.getMonth() + o, 1), new Date(h.getFullYear(), h.getMonth() + o + 1, 1)];
+  if (p === 'anio') return [new Date(h.getFullYear() + o, 0, 1), new Date(h.getFullYear() + o + 1, 0, 1)];
+  return null;
+}
+
+function periodoTexto() {
+  const p = window._finPeriodo, o = window._finOffset || 0, r = rangoPeriodo();
+  if (!r) return 'histórico';
+  const [ini, fin] = r;
+  const dm = d => d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3);
+  if (p === 'dia')    return o === 0 ? 'hoy' : o === -1 ? 'ayer' : dm(ini) + ' ' + ini.getFullYear();
+  if (p === 'semana') { const ult = new Date(fin); ult.setDate(fin.getDate() - 1); return o === 0 ? 'esta semana' : dm(ini) + ' – ' + dm(ult); }
+  if (p === 'mes')    return MESES[ini.getMonth()] + ' ' + ini.getFullYear();
+  if (p === 'anio')   return String(ini.getFullYear());
+  return '';
+}
+
+function updatePeriodoNav(lbl) {
+  const nav = document.getElementById('periodo-nav');
+  if (!nav) return;
+  nav.style.visibility = window._finPeriodo === 'todo' ? 'hidden' : 'visible';
+  document.getElementById('periodo-label').textContent = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+  document.getElementById('periodo-next').disabled = (window._finOffset || 0) >= 0;
+}
+
+// Parsea 'YYYY-MM-DD' como fecha local (evita el corrimiento por UTC)
+function parseFechaLocal(v) {
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) { const [y,m,d] = v.split('-').map(Number); return new Date(y, m-1, d); }
+  return new Date(v);
+}
+
 function filtrarPorPeriodo(arr, campo) {
-  const hoy = new Date(); const p = window._finPeriodo;
-  return arr.filter(f => {
-    const d = new Date(f[campo]);
-    if (p === 'dia')   return d.toDateString() === hoy.toDateString();
-    if (p === 'semana'){ const s=new Date(hoy);s.setDate(hoy.getDate()-7);return d>=s; }
-    if (p === 'mes')   return d.getMonth()===hoy.getMonth()&&d.getFullYear()===hoy.getFullYear();
-    if (p === 'anio')  return d.getFullYear()===hoy.getFullYear();
-    return true; // siempre
-  });
+  const r = rangoPeriodo();
+  if (!r) return arr;
+  const [ini, fin] = r;
+  return arr.filter(f => { const d = parseFechaLocal(f[campo]); return d >= ini && d < fin; });
 }
 
 // ── CLIENTES ────────────────────────────────────────
