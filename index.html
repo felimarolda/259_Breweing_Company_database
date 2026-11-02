@@ -166,6 +166,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:0 4px;flex-shrink:0;}
 .modal-close:hover{color:var(--cream);}
 .modal-footer{display:flex;gap:10px;justify-content:flex-end;padding-top:4px;}
+.cf-detalle{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--font-b);font-size:14px;color:var(--cream);display:flex;flex-direction:column;gap:3px;}
+.cf-detalle[hidden]{display:none;}
+.cf-detalle div{display:flex;justify-content:space-between;gap:16px;}
+.cf-detalle span{color:var(--muted);}
+.btn-confirm-danger{background:var(--red2);color:#fff;}
+.btn-confirm-danger:hover{background:#9c3434;}
 
 .qa-option{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all 0.15s;}
 .qa-option:hover{border-color:var(--gold);background:rgba(60,104,48,0.07);}
@@ -714,6 +720,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-receta')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveReceta()">Guardar receta</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRMAR -->
+<div class="modal-ov" id="modal-confirm" style="z-index:300;">
+  <div class="modal" style="max-width:420px;" role="alertdialog" aria-modal="true" aria-labelledby="cf-titulo">
+    <div class="modal-hd"><div class="modal-title" id="cf-titulo">¿Estás seguro?</div><button class="modal-close" onclick="cerrarConfirmar(false)">×</button></div>
+    <div id="cf-msg" style="font-family:var(--font-b);font-size:15px;color:var(--cream);line-height:1.5;"></div>
+    <div id="cf-detalle" class="cf-detalle" hidden></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="cf-cancel" onclick="cerrarConfirmar(false)">Cancelar</button>
+      <button class="btn btn-primary" id="cf-ok" onclick="cerrarConfirmar(true)">Confirmar</button>
     </div>
   </div>
 </div>
@@ -1399,6 +1418,9 @@ async function saveReceta() {
     if (nom && cant) ingredientes.push({ nombre: nom, cantidad: cant, unidad: uni });
   });
   const rec = { nombre, estilo: document.getElementById('rec-estilo').value.trim(), base_litros: parseFloat(document.getElementById('rec-base').value)||100, dias: parseInt(document.getElementById('rec-dias').value)||28, descripcion: document.getElementById('rec-desc').value.trim(), ingredientes };
+  if (!await confirmar({ titulo:'¿Guardar receta?', mensaje:'Revisá que los datos estén bien antes de guardarla.',
+    detalle:[['Nombre', rec.nombre], ['Estilo', rec.estilo || '—'], ['Base', rec.base_litros + ' lts'], ['Días', rec.dias], ['Ingredientes', ingredientes.length]],
+    accion:'Sí, guardar' })) return;
   const { error } = await sb.from('recetas').insert(rec);
   if (error) { showToast('Error: ' + error.message); return; }
   closeModal('modal-receta');
@@ -1495,17 +1517,50 @@ async function saveIngreso() {
   renderPage(getCurrentPage());
 }
 
+// ── CONFIRMACIÓN ────────────────────────────────────
+// Muestra un cartel y devuelve una promesa: true si confirma, false si cancela.
+// detalle: lista de [etiqueta, valor] para que se pueda revisar antes de confirmar.
+function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function confirmar({ titulo = '¿Estás seguro?', mensaje = '', detalle = [], accion = 'Confirmar', peligro = false } = {}) {
+  document.getElementById('cf-titulo').textContent = titulo;
+  document.getElementById('cf-msg').textContent = mensaje;
+  const det = document.getElementById('cf-detalle');
+  det.innerHTML = detalle.map(([k, v]) => `<div><span>${escHtml(k)}</span><b style="font-weight:600">${escHtml(v)}</b></div>`).join('');
+  det.hidden = !detalle.length;
+  const ok = document.getElementById('cf-ok');
+  ok.textContent = accion;
+  ok.className = 'btn ' + (peligro ? 'btn-confirm-danger' : 'btn-primary');
+  document.getElementById('modal-confirm').classList.add('open');
+  document.getElementById('cf-cancel').focus();
+  return new Promise(res => { window._cfResolver = res; });
+}
+function cerrarConfirmar(v) {
+  document.getElementById('modal-confirm').classList.remove('open');
+  const r = window._cfResolver; window._cfResolver = null;
+  if (r) r(v);
+}
+document.addEventListener('keydown', e => {
+  if (!window._cfResolver) return;
+  if (e.key === 'Escape') { e.preventDefault(); cerrarConfirmar(false); }
+});
+document.getElementById('modal-confirm').addEventListener('click', e => { if (e.target.id === 'modal-confirm') cerrarConfirmar(false); });
+
 async function saveFerm() {
   const nombre = document.getElementById('ferm-nombre').value.trim();
   if (!nombre) { showToast('Ingresá un nombre'); return; }
-  await sb.from('fermentadores').insert({ nombre, capacidad: parseFloat(document.getElementById('ferm-cap').value)||0 });
+  const capacidad = parseFloat(document.getElementById('ferm-cap').value)||0;
+  if (!await confirmar({ titulo:'¿Agregar fermentador?', mensaje:'Revisá que los datos estén bien antes de guardarlo.', detalle:[['Nombre', nombre], ['Capacidad', capacidad + ' lts']], accion:'Sí, agregar' })) return;
+  const { error } = await sb.from('fermentadores').insert({ nombre, capacidad });
+  if (error) { showToast('Error: ' + error.message); return; }
   closeModal('modal-ferm'); showToast('✓ Fermentador agregado'); renderConfig();
 }
 
 async function saveTipo() {
   const nombre = document.getElementById('tipo-nombre').value.trim();
   if (!nombre) { showToast('Ingresá un nombre'); return; }
-  await sb.from('tipos').insert({ nombre });
+  if (!await confirmar({ titulo:'¿Agregar tipo de insumo?', mensaje:'Revisá que el nombre esté bien antes de guardarlo.', detalle:[['Nombre', nombre]], accion:'Sí, agregar' })) return;
+  const { error } = await sb.from('tipos').insert({ nombre });
+  if (error) { showToast('Error: ' + error.message); return; }
   closeModal('modal-tipo'); showToast('✓ Tipo agregado'); renderConfig();
 }
 
@@ -1770,8 +1825,10 @@ async function openRecetaDetail(id) {
   }
   document.getElementById('rd-content').innerHTML = html;
   document.getElementById('rd-del-btn').onclick = async () => {
-    if (!confirm('¿Eliminar "' + r.nombre + '"?')) return;
-    await sb.from('recetas').delete().eq('id', id);
+    if (!await confirmar({ titulo:'¿Eliminar receta?', mensaje:'Esta acción no se puede deshacer.' + (lotes?.length ? ' La receta tiene lotes asociados.' : ''),
+      detalle:[['Nombre', r.nombre], ['Estilo', r.estilo || '—'], ['Lotes asociados', lotes?.length || 0]], accion:'Sí, eliminar', peligro:true })) return;
+    const { error } = await sb.from('recetas').delete().eq('id', id);
+    if (error) { showToast('Error: ' + error.message); return; }
     closeModal('modal-rec-detail'); showToast('Receta eliminada'); renderRecetas();
   };
   document.getElementById('modal-rec-detail').classList.add('open');
@@ -1846,14 +1903,27 @@ async function delFinanza(id) {
 async function renderConfig() {
   const { data: ferms } = await sb.from('fermentadores').select('*').order('nombre');
   const { data: tipos } = await sb.from('tipos').select('*').order('nombre');
+  window._ferms = ferms || []; window._tipos = tipos || [];
   const fl = document.getElementById('ferm-list');
   fl.innerHTML = ferms?.length ? '<table class="tbl"><tbody>' + ferms.map(f=>`<tr><td>${f.nombre}</td><td class="muted">${f.capacidad} lts</td><td><button class="btn btn-danger btn-sm" onclick="delFerm(${f.id})">✕</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty"><div class="empty-text">Sin fermentadores</div></div>';
   const tl = document.getElementById('tipo-list');
   tl.innerHTML = tipos?.length ? '<table class="tbl"><tbody>' + tipos.map(t=>`<tr><td>${t.nombre}</td><td><button class="btn btn-danger btn-sm" onclick="delTipo(${t.id})">✕</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty"><div class="empty-text">Sin tipos</div></div>';
 }
 
-async function delFerm(id) { if(!confirm('¿Eliminar?'))return; await sb.from('fermentadores').delete().eq('id',id); renderConfig(); }
-async function delTipo(id) { if(!confirm('¿Eliminar?'))return; await sb.from('tipos').delete().eq('id',id); renderConfig(); }
+async function delFerm(id) {
+  const f = (window._ferms || []).find(x => x.id === id) || {};
+  if (!await confirmar({ titulo:'¿Eliminar fermentador?', mensaje:'Esta acción no se puede deshacer.', detalle:[['Nombre', f.nombre || '#' + id], ['Capacidad', (f.capacidad ?? '—') + ' lts']], accion:'Sí, eliminar', peligro:true })) return;
+  const { error } = await sb.from('fermentadores').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message); return; }
+  showToast('Fermentador eliminado'); renderConfig();
+}
+async function delTipo(id) {
+  const t = (window._tipos || []).find(x => x.id === id) || {};
+  if (!await confirmar({ titulo:'¿Eliminar tipo de insumo?', mensaje:'Esta acción no se puede deshacer.', detalle:[['Nombre', t.nombre || '#' + id]], accion:'Sí, eliminar', peligro:true })) return;
+  const { error } = await sb.from('tipos').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message); return; }
+  showToast('Tipo eliminado'); renderConfig();
+}
 
 
 // ── PERIODO FILTER ──────────────────────────────────
