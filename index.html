@@ -51,6 +51,33 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 .btn-ghost:hover{color:var(--gold2);border-color:var(--border3);}
 .btn-sm{padding:6px 10px;font-size:11px;}
 .btn:disabled{opacity:.35;cursor:default;}
+.fc-legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--font-b);font-size:14px;color:var(--cream);margin-bottom:6px;}
+.fc-legend span{display:flex;align-items:center;gap:7px;}
+.fc-legend i{display:inline-block;width:16px;height:3px;border-radius:2px;}
+.fc-legend b{font-family:var(--font-m);font-size:11.5px;font-weight:500;color:var(--muted);}
+.fc-wrap{position:relative;width:100%;touch-action:pan-y;}
+.fc-wrap svg{display:block;width:100%;overflow:visible;}
+.fc-axis{font-family:var(--font-m);font-size:10px;fill:var(--muted);}
+.fc-endlbl{font-family:var(--font-b);font-size:13px;fill:var(--cream);}
+.fc-tip{position:absolute;pointer-events:none;background:var(--bg2);border:1px solid var(--border3);border-radius:8px;padding:8px 10px;font-family:var(--font-b);font-size:13px;color:var(--cream);box-shadow:0 6px 20px rgba(60,40,20,0.14);white-space:nowrap;z-index:5;}
+.fc-tip .fc-tip-hd{font-family:var(--font-m);font-size:10.5px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px;}
+.fc-tip .fc-row{display:flex;align-items:center;gap:7px;justify-content:space-between;}
+.fc-tip .fc-row i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:2px;}
+.fc-tip .fc-row b{font-family:var(--font-m);font-size:12px;font-weight:500;margin-left:12px;}
+.fc-details{margin-top:10px;}
+.fc-details summary{font-family:var(--font-m);font-size:11px;color:var(--muted);cursor:pointer;}
+.fin-stats{display:flex;flex-direction:column;gap:14px;}
+.fin-stats[hidden]{display:none;}
+.fin-cat-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fin-cat-filtros .btn{padding:5px 10px;}
+.cb-row{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:12px;align-items:center;padding:6px 0;}
+.cb-lbl{font-family:var(--font-b);font-size:14px;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cb-track{display:flex;align-items:center;gap:8px;min-width:0;}
+.cb-bar{height:14px;background:#c25a2c;border-radius:0 4px 4px 0;flex-shrink:0;}
+.cb-val{font-family:var(--font-m);font-size:11.5px;color:var(--cream);white-space:nowrap;}
+.cb-val span{color:var(--muted);margin-left:6px;}
+.cb-row:hover .cb-bar{filter:brightness(0.9);}
+.fc-empty{font-family:var(--font-b);font-size:14px;color:var(--muted);text-align:center;padding:40px 0;}
 .btn-danger{background:rgba(196,96,80,0.15);color:var(--red2);border:1px solid rgba(196,96,80,0.25);}
 .btn-danger:hover{background:rgba(196,96,80,0.25);}
 .btn-logout{background:transparent;color:var(--muted);border:1px solid var(--border);font-family:var(--font-m);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;}
@@ -348,7 +375,32 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
         <div class="stat-card"><div class="stat-label" id="fin-gas-label">Gastos</div><div class="stat-val stat-danger" id="fin-gastos">$0</div></div>
         </div>
       </div>
-      <div class="card"><div class="card-title">Movimientos</div><div id="fin-list"><div class="loading">cargando...</div></div></div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-primary btn-sm fin-view-btn" data-v="lista" onclick="setFinVista('lista')">Movimientos</button>
+        <button class="btn btn-ghost btn-sm fin-view-btn" data-v="stats" onclick="setFinVista('stats')">Stats</button>
+      </div>
+      <div class="card" id="fin-lista-card"><div class="card-title">Movimientos <span id="fin-list-resumen" style="text-transform:none;letter-spacing:0;font-size:11px;"></span></div><div class="fin-cat-filtros" id="fin-cat-filtros"></div><div id="fin-list"><div class="loading">cargando...</div></div></div>
+      <div id="fin-stats" class="fin-stats" hidden>
+      <div class="card" id="fin-grafico-card">
+        <div class="card-title" style="flex-wrap:wrap;gap:8px;">
+          <span id="fin-chart-title">Evolución</span>
+          <span style="display:flex;gap:6px;text-transform:none;letter-spacing:0;">
+            <button class="btn btn-primary btn-sm fin-met-btn" data-m="monto" onclick="setFinMetrica('monto')">Monto ($)</button>
+            <button class="btn btn-ghost btn-sm fin-met-btn" data-m="cantidad" onclick="setFinMetrica('cantidad')">Cantidad</button>
+          </span>
+        </div>
+        <div class="fc-legend">
+          <span><i style="background:#008f80"></i>Ingresos <b id="fc-tot-ing"></b></span>
+          <span><i style="background:#c25a2c"></i>Gastos <b id="fc-tot-gas"></b></span>
+        </div>
+        <div id="fin-chart" class="fc-wrap"></div>
+        <details class="fc-details"><summary>Ver datos en tabla</summary><div id="fin-chart-table" style="overflow-x:auto;"></div></details>
+      </div>
+      <div class="card">
+        <div class="card-title"><span id="fin-cat-title">Gastos por categoría</span></div>
+        <div id="fin-cat-chart"></div>
+      </div>
+      </div>
     </div>
 
     <!-- CONFIG -->
@@ -1730,16 +1782,50 @@ async function renderFinanzas() {
   const filtered = filtrarPorPeriodo(fin||[], 'fecha');
   const lbl = periodoTexto();
   updatePeriodoNav(lbl);
+  window._finData = fin || [];
+  if (window._finVista === 'stats') { renderFinChart(); renderFinCategorias(filtered); }
   if(document.getElementById('fin-ing-label')) document.getElementById('fin-ing-label').textContent = 'Ingresos — '+lbl;
   if(document.getElementById('fin-gas-label')) document.getElementById('fin-gas-label').textContent = 'Gastos — '+lbl;
   const ing = filtered.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+f.monto,0);
   const gas = filtered.filter(f=>f.tipo==='gasto').reduce((s,f)=>s+f.monto,0);
   document.getElementById('fin-ingresos').textContent = fmtMoney(ing);
   document.getElementById('fin-gastos').textContent = fmtMoney(gas);
-  const fin2 = filtered;
+  window._finFiltrados = filtered;
+  renderFinLista();
+}
+
+// ── LISTA DE MOVIMIENTOS CON FILTRO DE CATEGORÍA ─────
+const FIN_CATS = {
+  insumos:      { nombre:'Insumos',              icon:'📦', tipo:'gasto' },
+  energia:      { nombre:'Energía / servicios',  icon:'⚡', tipo:'gasto' },
+  equipamiento: { nombre:'Equipamiento',         icon:'🔧', tipo:'gasto' },
+  logistica:    { nombre:'Logística',            icon:'🚚', tipo:'gasto' },
+  otros:        { nombre:'Otros gastos',         icon:'📋', tipo:'gasto' },
+  venta_barril: { nombre:'Venta barriles',       icon:'🍺', tipo:'ingreso' },
+  venta_lata:   { nombre:'Venta latas',          icon:'🥫', tipo:'ingreso' },
+  venta_botella:{ nombre:'Venta botellas',       icon:'🍾', tipo:'ingreso' },
+  otro:         { nombre:'Otros ingresos',       icon:'💰', tipo:'ingreso' },
+};
+window._finCat = 'todas';
+
+function setFinCat(c) { window._finCat = c; renderFinLista(); }
+
+function renderFinLista() {
+  const filtered = window._finFiltrados || [];
+  const cat = window._finCat;
+  const chips = [['todas','Todas','']].concat(Object.entries(FIN_CATS).map(([k,v]) => [k, v.nombre, v.icon]));
+  document.getElementById('fin-cat-filtros').innerHTML = chips.map(([k,n,i]) =>
+    `<button class="btn btn-sm ${cat===k?'btn-primary':'btn-ghost'}" onclick="setFinCat('${k}')">${i?i+' ':''}${n}</button>`).join('');
+  const fin2 = cat === 'todas' ? filtered : filtered.filter(f => (f.categoria||'') === cat);
+  const resumen = document.getElementById('fin-list-resumen');
+  if (cat === 'todas') resumen.textContent = '';
+  else {
+    const tot = fin2.reduce((a,f) => a + (Number(f.monto)||0), 0);
+    resumen.textContent = fin2.length + (fin2.length === 1 ? ' movimiento · ' : ' movimientos · ') + fmtMoney(tot);
+  }
   const list = document.getElementById('fin-list');
-  if (!fin2||!fin2.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin movimientos financieros</div></div>'; return; }
-  const icons = { insumos:'📦',energia:'⚡',equipamiento:'🔧',logistica:'🚚',otros:'📋',venta_barril:'🍺',venta_lata:'🥫',venta_botella:'🍾',otro:'💰' };
+  if (!fin2||!fin2.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">' + (cat === 'todas' ? 'Sin movimientos financieros' : 'Sin movimientos de esta categoría en el período') + '</div></div>'; return; }
+  const icons = Object.fromEntries(Object.entries(FIN_CATS).map(([k,v]) => [k, v.icon]));
   list.innerHTML = '<table class="tbl"><thead><tr><th>Cat.</th><th>Descripción</th><th>Usuario</th><th>Fecha</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
     fin2.map(f=>`<tr>
       <td>${icons[f.categoria||'']||'💸'}</td>
@@ -1845,6 +1931,219 @@ function filtrarPorPeriodo(arr, campo) {
   const [ini, fin] = r;
   return arr.filter(f => { const d = parseFechaLocal(f[campo]); return d >= ini && d < fin; });
 }
+
+// ── GRÁFICO DE FINANZAS ─────────────────────────────
+window._finVista = 'lista';
+window._finMetrica = 'monto';
+const FC_COL = { ingreso:'#008f80', gasto:'#c25a2c' };
+const FC_SERIES = [ {k:'ingreso', nombre:'Ingresos'}, {k:'gasto', nombre:'Gastos'} ];
+const DIAS_CORTOS = ['dom','lun','mar','mié','jue','vie','sáb'];
+
+function toggleBtns(sel, key, val) {
+  document.querySelectorAll(sel).forEach(b => {
+    const on = b.dataset[key] === val;
+    b.classList.toggle('btn-primary', on);
+    b.classList.toggle('btn-ghost', !on);
+  });
+}
+
+function setFinVista(v) {
+  window._finVista = v;
+  toggleBtns('.fin-view-btn', 'v', v);
+  document.getElementById('fin-lista-card').hidden = v !== 'lista';
+  document.getElementById('fin-stats').hidden = v !== 'stats';
+  if (v === 'stats') { renderFinChart(); renderFinCategorias(window._finFiltrados || []); }
+}
+
+function setFinMetrica(m) {
+  window._finMetrica = m;
+  toggleBtns('.fin-met-btn', 'm', m);
+  renderFinChart();
+}
+
+// Arma los intervalos (por día o por mes) según el período elegido
+function finBuckets(rows) {
+  const p = window._finPeriodo;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const out = [];
+  let porMes = false, ini, fin;
+  if (p === 'anio' || p === 'todo') {
+    porMes = true;
+    if (p === 'anio') [ini, fin] = rangoPeriodo();
+    else {
+      const ts = rows.map(r => parseFechaLocal(r.fecha).getTime()).filter(t => !isNaN(t));
+      const min = ts.length ? new Date(Math.min(...ts)) : hoy;
+      ini = new Date(min.getFullYear(), min.getMonth(), 1);
+      fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+    }
+    for (let d = ini; d < fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) out.push(d);
+  } else {
+    if (p === 'dia') { // 7 días que terminan en el día elegido
+      const [a] = rangoPeriodo();
+      ini = new Date(a.getFullYear(), a.getMonth(), a.getDate() - 6);
+      fin = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1);
+    } else [ini, fin] = rangoPeriodo();
+    for (let d = ini; d < fin; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) out.push(d);
+  }
+  const key = d => porMes ? d.getFullYear()*12 + d.getMonth() : d.getFullYear()*10000 + d.getMonth()*100 + d.getDate();
+  const idx = new Map(out.map((d, i) => [key(d), i]));
+  const buckets = out.map(d => ({ d, futuro: d > hoy, monto:{ingreso:0,gasto:0}, cantidad:{ingreso:0,gasto:0} }));
+  rows.forEach(r => {
+    const d = parseFechaLocal(r.fecha);
+    const i = idx.get(key(d));
+    if (i === undefined || !(r.tipo in FC_COL)) return;
+    buckets[i].monto[r.tipo] += Number(r.monto) || 0;
+    buckets[i].cantidad[r.tipo] += 1;
+  });
+  return { buckets, porMes };
+}
+
+function fcCompacto(n) {
+  if (window._finMetrica === 'cantidad') return String(Math.round(n));
+  const a = Math.abs(n);
+  if (a >= 1e6) return '$' + (n/1e6).toLocaleString('es-AR',{maximumFractionDigits:1}) + 'M';
+  if (a >= 1e3) return '$' + (n/1e3).toLocaleString('es-AR',{maximumFractionDigits:1}) + 'k';
+  return '$' + n.toLocaleString('es-AR');
+}
+function fcValor(n) { return window._finMetrica === 'cantidad' ? n + (n === 1 ? ' mov.' : ' movs.') : fmtMoney(n); }
+
+function fcEtiqueta(b, porMes, largo) {
+  const d = b.d;
+  if (porMes) {
+    const m = MESES[d.getMonth()];
+    return largo ? m.charAt(0).toUpperCase() + m.slice(1) + ' ' + d.getFullYear()
+                 : m.slice(0,3) + (window._finPeriodo === 'todo' ? " '" + String(d.getFullYear()).slice(2) : '');
+  }
+  if (largo) return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3) + ' ' + d.getFullYear();
+  if (window._finPeriodo === 'mes') return String(d.getDate());
+  return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate();
+}
+
+function fcEscala(max) {
+  if (max <= 0) return { top: window._finMetrica === 'cantidad' ? 4 : 1000, paso: window._finMetrica === 'cantidad' ? 1 : 250 };
+  const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto)));
+  let paso = [1,2,2.5,5,10].map(m => m*mag).find(v => v >= bruto);
+  if (window._finMetrica === 'cantidad') paso = Math.max(1, Math.ceil(paso));
+  return { top: Math.ceil(max / paso) * paso, paso };
+}
+
+function renderFinChart() {
+  const wrap = document.getElementById('fin-chart');
+  if (!wrap || document.getElementById('fin-stats').hidden) return;
+  const met = window._finMetrica;
+  const { buckets, porMes } = finBuckets(window._finData || []);
+  const vis = buckets.filter(b => !b.futuro);
+  const pLbl = periodoTexto();
+  const gran = porMes ? 'por mes' : 'por día';
+  document.getElementById('fin-chart-title').textContent =
+    'Evolución ' + gran + ' — ' + (window._finPeriodo === 'dia' ? '7 días hasta ' + pLbl : pLbl);
+  FC_SERIES.forEach(s => {
+    const tot = vis.reduce((a, b) => a + b[met][s.k], 0);
+    document.getElementById(s.k === 'ingreso' ? 'fc-tot-ing' : 'fc-tot-gas').textContent = fcValor(tot);
+  });
+
+  // tabla de datos
+  document.getElementById('fin-chart-table').innerHTML = '<table class="tbl"><thead><tr><th>' + (porMes ? 'Mes' : 'Día') + '</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Gastos</th></tr></thead><tbody>' +
+    vis.map(b => `<tr><td>${fcEtiqueta(b, porMes, true)}</td><td style="text-align:right">${fcValor(b[met].ingreso)}</td><td style="text-align:right">${fcValor(b[met].gasto)}</td></tr>`).join('') + '</tbody></table>';
+
+  if (!vis.length) { wrap.innerHTML = '<div class="fc-empty">Este período todavía no empezó.</div>'; return; }
+
+  const W = Math.max(280, wrap.clientWidth || 600), H = W < 500 ? 220 : 260;
+  const m = { l: 52, r: W < 500 ? 62 : 74, t: 14, b: 28 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const max = Math.max(0, ...vis.map(b => Math.max(b[met].ingreso, b[met].gasto)));
+  const { top, paso } = fcEscala(max);
+  const n = buckets.length;
+  const x = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1));
+  const y = v => m.t + ih - (v / top) * ih;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Gráfico de líneas de ingresos y gastos ${gran}">`;
+  for (let v = 0; v <= top + 1e-9; v += paso) {
+    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'rgba(80,60,30,0.30)' : 'rgba(80,60,30,0.10)'}" stroke-width="1"/>`;
+    svg += `<text class="fc-axis" x="${m.l - 8}" y="${y(v) + 3}" text-anchor="end">${fcCompacto(v)}</text>`;
+  }
+  const maxLbls = Math.max(2, Math.floor(iw / (porMes ? 46 : (window._finPeriodo === 'mes' ? 26 : 52))));
+  const cada = Math.ceil(n / maxLbls);
+  buckets.forEach((b, i) => {
+    if (i % cada !== 0 && i !== n - 1) return;
+    if (i === n - 1 && n > 1 && (n - 1) % cada !== 0 && (n - 1) % cada < cada / 2) return; // evita pisar la etiqueta anterior
+    svg += `<text class="fc-axis" x="${x(i)}" y="${H - 8}" text-anchor="middle">${fcEtiqueta(b, porMes, false)}</text>`;
+  });
+
+  const ult = vis.length - 1;
+  const finales = [];
+  // el mes en curso todavía no terminó: su tramo va punteado
+  const hoyD = new Date();
+  const enCurso = porMes && vis.length > 1 && vis[ult].d.getFullYear() === hoyD.getFullYear() && vis[ult].d.getMonth() === hoyD.getMonth();
+  FC_SERIES.forEach(s => {
+    const pts = vis.map((b, i) => `${x(i).toFixed(1)},${y(b[met][s.k]).toFixed(1)}`);
+    const solidos = enCurso ? pts.slice(0, -1) : pts;
+    svg += `<polyline points="${solidos.join(' ')}" fill="none" stroke="${FC_COL[s.k]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (enCurso) svg += `<polyline points="${pts.slice(-2).join(' ')}" fill="none" stroke="${FC_COL[s.k]}" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
+    svg += `<circle cx="${x(ult)}" cy="${y(vis[ult][met][s.k])}" r="4" fill="${FC_COL[s.k]}" stroke="#fff" stroke-width="2"/>`;
+    finales.push({ s, yy: y(vis[ult][met][s.k]) });
+  });
+  // etiquetas directas al final de cada línea, separadas si se pisan
+  finales.sort((a, b) => a.yy - b.yy);
+  if (finales[1].yy - finales[0].yy < 15) { const mid = (finales[0].yy + finales[1].yy) / 2; finales[0].yy = mid - 7.5; finales[1].yy = mid + 7.5; }
+  finales.forEach(f => { svg += `<text class="fc-endlbl" x="${x(ult) + 9}" y="${f.yy + 4}">${f.s.nombre}</text>`; });
+
+  svg += `<line id="fc-cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" stroke="rgba(80,60,30,0.30)" stroke-width="1" visibility="hidden"/>`;
+  FC_SERIES.forEach(s => { svg += `<circle id="fc-dot-${s.k}" r="5" fill="${FC_COL[s.k]}" stroke="#fff" stroke-width="2" visibility="hidden"/>`; });
+  svg += `<rect id="fc-hit" x="${m.l - 10}" y="0" width="${iw + 20}" height="${H}" fill="transparent"/>`;
+  svg += '</svg><div class="fc-tip" id="fc-tip" hidden></div>';
+  wrap.innerHTML = svg;
+
+  const hit = document.getElementById('fc-hit'), tip = document.getElementById('fc-tip'), cross = document.getElementById('fc-cross');
+  const svgEl = wrap.querySelector('svg');
+  const ocultar = () => { tip.hidden = true; cross.setAttribute('visibility','hidden'); FC_SERIES.forEach(s => document.getElementById('fc-dot-' + s.k).setAttribute('visibility','hidden')); };
+  const mover = ev => {
+    const r = svgEl.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * (W / r.width);
+    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw / (n - 1)));
+    i = Math.max(0, Math.min(ult, i));
+    const b = vis[i], cx = x(i);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility','visible');
+    FC_SERIES.forEach(s => { const d = document.getElementById('fc-dot-' + s.k); d.setAttribute('cx', cx); d.setAttribute('cy', y(b[met][s.k])); d.setAttribute('visibility','visible'); });
+    tip.innerHTML = `<div class="fc-tip-hd">${fcEtiqueta(b, porMes, true)}${enCurso && i === ult ? ' · en curso' : ''}</div>` +
+      FC_SERIES.map(s => `<div class="fc-row"><span><i style="background:${FC_COL[s.k]}"></i>${s.nombre}</span><b>${fcValor(b[met][s.k])}</b></div>`).join('');
+    tip.hidden = false;
+    const sx = cx * (r.width / W), tw = tip.offsetWidth;
+    tip.style.left = (sx + 14 + tw > r.width ? sx - 14 - tw : sx + 14) + 'px';
+    tip.style.top = (m.t * (r.height / H)) + 'px';
+  };
+  hit.addEventListener('pointermove', mover);
+  hit.addEventListener('pointerdown', mover);
+  hit.addEventListener('pointerleave', ocultar);
+}
+
+// Barras horizontales: gastos del período agrupados por categoría
+function renderFinCategorias(filtered) {
+  const el = document.getElementById('fin-cat-chart');
+  if (!el) return;
+  document.getElementById('fin-cat-title').textContent = 'Gastos por categoría — ' + periodoTexto();
+  const gastos = filtered.filter(f => f.tipo === 'gasto');
+  const tot = {}, cant = {};
+  Object.entries(FIN_CATS).forEach(([k,v]) => { if (v.tipo === 'gasto') { tot[k] = 0; cant[k] = 0; } });
+  gastos.forEach(f => { const k = f.categoria && f.categoria in tot ? f.categoria : (f.categoria || 'sin_cat'); tot[k] = (tot[k]||0) + (Number(f.monto)||0); cant[k] = (cant[k]||0) + 1; });
+  const total = Object.values(tot).reduce((a,b) => a + b, 0);
+  if (!total) { el.innerHTML = '<div class="fc-empty">Sin gastos en este período.</div>'; return; }
+  const max = Math.max(...Object.values(tot));
+  el.innerHTML = Object.entries(tot).sort((a,b) => b[1] - a[1]).map(([k,v]) => {
+    const c = FIN_CATS[k] || { nombre: k === 'sin_cat' ? 'Sin categoría' : k, icon:'💸' };
+    const pctv = Math.round(v / total * 100);
+    const w = v ? Math.max(2, v / max * 100) : 0;
+    return `<div class="cb-row" title="${c.nombre}: ${fmtMoney(v)} · ${cant[k]} ${cant[k]===1?'gasto':'gastos'} · ${pctv}% del total">
+      <div class="cb-lbl">${c.icon} ${c.nombre}</div>
+      <div class="cb-track"><div class="cb-bar" style="width:calc((100% - 120px) * ${w/100})"></div><div class="cb-val">${fmtMoney(v)}<span>${pctv}%</span></div></div>
+    </div>`;
+  }).join('') + `<div class="cb-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px;"><div class="cb-lbl" style="color:var(--muted)">Total</div><div class="cb-val">${fmtMoney(total)}</div></div>`;
+}
+
+window.addEventListener('resize', () => {
+  clearTimeout(window._fcResize);
+  window._fcResize = setTimeout(renderFinChart, 150);
+});
 
 // ── CLIENTES ────────────────────────────────────────
 async function saveCliente() {
