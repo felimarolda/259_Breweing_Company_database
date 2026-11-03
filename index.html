@@ -77,6 +77,28 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 .cb-val{font-family:var(--font-m);font-size:11.5px;color:var(--cream);white-space:nowrap;}
 .cb-val span{color:var(--muted);margin-left:6px;}
 .cb-row:hover .cb-bar{filter:brightness(0.9);}
+.cli-row{cursor:pointer;}
+.ch-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.ch-stat{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;}
+.ch-stat .l{font-family:var(--font-m);font-size:9.5px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.ch-stat .v{font-family:var(--font-d);font-size:19px;font-weight:700;color:var(--cream);margin-top:2px;}
+.ch-stat .n{font-family:var(--font-b);font-size:12.5px;color:var(--muted);}
+.ch-alertas{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.ch-alerta{display:flex;gap:8px;align-items:flex-start;border-radius:var(--r);padding:8px 12px;font-family:var(--font-b);font-size:14px;}
+.ch-alerta.mal{background:rgba(180,60,60,0.08);border:1px solid rgba(196,96,80,0.3);color:#8a2020;}
+.ch-alerta.ojo{background:rgba(180,100,20,0.08);border:1px solid rgba(180,100,20,0.25);color:#7a4808;}
+.ch-alerta.bien{background:rgba(60,110,40,0.08);border:1px solid rgba(90,122,74,0.3);color:#2a6a18;}
+.ch-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.ch-tl{display:flex;flex-direction:column;}
+.ch-ev{display:grid;grid-template-columns:86px 22px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--border);}
+.ch-ev:last-child{border-bottom:none;}
+.ch-ev[hidden]{display:none;}
+.ch-ev .f{font-family:var(--font-m);font-size:11px;color:var(--muted);padding-top:2px;}
+.ch-ev .i{font-size:15px;line-height:1.2;}
+.ch-ev .t{font-family:var(--font-b);font-size:14.5px;color:var(--cream);line-height:1.35;}
+.ch-ev .t small{display:block;font-size:12.5px;color:var(--muted);}
+.ch-ev .m{font-family:var(--font-m);font-size:12px;color:var(--cream);text-align:right;white-space:nowrap;padding-top:2px;}
+@media(max-width:560px){.ch-ev{grid-template-columns:22px 1fr auto;}.ch-ev .f{grid-column:2/4;order:-1;padding:0;}}
 .fc-empty{font-family:var(--font-b);font-size:14px;color:var(--muted);text-align:center;padding:40px 0;}
 .btn-danger{background:rgba(196,96,80,0.15);color:var(--red2);border:1px solid rgba(196,96,80,0.25);}
 .btn-danger:hover{background:rgba(196,96,80,0.25);}
@@ -342,33 +364,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       </div>
       <div id="inv-insumos"><div class="card"><div id="inv-list-insumos"><div class="loading">cargando...</div></div></div></div>
       <div id="inv-producto" style="display:none"><div class="card"><div id="inv-list-producto"></div></div></div>
-      <div id="inv-movimientos" style="display:none">
-        <div style="display:flex;gap:6px;margin-bottom:14px;">
-          <button class="btn btn-primary btn-sm mov-view-btn" data-v="lista" onclick="setMovVista('lista')">Lista</button>
-          <button class="btn btn-ghost btn-sm mov-view-btn" data-v="grafico" onclick="setMovVista('grafico')">Gráfico</button>
-        </div>
-        <div class="card" id="mov-lista-card"><div id="inv-list-movimientos"></div></div>
-        <div class="card" id="mov-grafico-card" hidden>
-          <div class="card-title" style="flex-wrap:wrap;gap:8px;">
-            <span id="mov-chart-title">Movimientos</span>
-            <span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;text-transform:none;letter-spacing:0;">
-              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="dia" onclick="setMovPeriodo('dia')">Día</button>
-              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="semana" onclick="setMovPeriodo('semana')">Semana</button>
-              <button class="btn btn-primary btn-sm mov-per-btn" data-p="mes" onclick="setMovPeriodo('mes')">Mes</button>
-              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="anio" onclick="setMovPeriodo('anio')">Año</button>
-              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="todo" onclick="setMovPeriodo('todo')">Todo</button>
-              <span id="mov-nav" style="display:flex;gap:6px;align-items:center;">
-                <button class="btn btn-ghost btn-sm" onclick="moveMovPeriodo(-1)" title="Período anterior">‹</button>
-                <span id="mov-per-label" style="font-family:var(--font-b);font-size:13px;color:var(--cream);min-width:110px;text-align:center;"></span>
-                <button class="btn btn-ghost btn-sm" id="mov-next" onclick="moveMovPeriodo(1)" title="Período siguiente">›</button>
-              </span>
-            </span>
-          </div>
-          <div class="fc-legend" id="mov-legend"></div>
-          <div id="mov-chart" class="fc-wrap"></div>
-          <details class="fc-details"><summary>Ver datos en tabla</summary><div id="mov-chart-table" style="overflow-x:auto;"></div></details>
-        </div>
-      </div>
+      <div id="inv-movimientos" style="display:none"><div class="card"><div id="inv-list-movimientos"></div></div></div>
     </div>
 
     <!-- RECETAS -->
@@ -1118,7 +1114,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 
 <!-- DETALLE CLIENTE -->
 <div class="modal-ov" id="modal-cli-detail">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:720px;">
     <div class="modal-hd"><div class="modal-title" id="cli-det-nombre">—</div><button class="modal-close" onclick="closeModal('modal-cli-detail')">×</button></div>
     <div id="cli-det-content"></div>
     <div class="modal-footer">
@@ -1806,8 +1802,6 @@ async function renderInventario() {
   else { pl.innerHTML = '<table class="tbl"><thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Merma</th></tr></thead><tbody>' + productos.map(p=>`<tr><td>${p.lote_nombre} <span class="muted">#${p.lote_id}</span></td><td><span class="badge badge-teal">${p.tipo}</span></td><td><span class="num">${p.cantidad}</span> <span class="muted">${p.unidad}</span></td><td class="muted">${p.fecha}</td><td class="muted">${p.merma>0?p.merma+' lts':'—'}</td></tr>`).join('') + '</tbody></table>'; }
 
   const { data: movs } = await sb.from('movimientos').select('*').order('created_at',{ascending:false});
-  window._movData = movs || [];
-  renderMovChart();
   const ml = document.getElementById('inv-list-movimientos');
   if (!movs||!movs.length) { ml.innerHTML = '<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">Sin movimientos</div></div>'; }
   else {
@@ -2263,77 +2257,9 @@ function renderFinCategorias(filtered) {
   }).join('') + `<div class="cb-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px;"><div class="cb-lbl" style="color:var(--muted)">Total</div><div class="cb-val">${fmtMoney(total)}</div></div>`;
 }
 
-// ── GRÁFICO DEL HISTORIAL DE MOVIMIENTOS (INVENTARIO) ──
-// Cuenta movimientos por tipo: las cantidades vienen en unidades distintas (kg, lts, latas) y no se pueden sumar.
-window._movVista = 'lista';
-window._movPeriodo = 'mes';
-window._movOffset = 0;
-const MOV_SERIES = [
-  { k:'entrada',    nombre:'Entradas',   color:'#2a78d6' },
-  { k:'produccion', nombre:'Producción', color:'#eb6834' },
-  { k:'envasado',   nombre:'Envasado',   color:'#1baf7a' },
-];
-const MOV_OTROS = { k:'otros', nombre:'Otros', color:'#8a8178' };
-
-function setMovVista(v) {
-  window._movVista = v;
-  toggleBtns('.mov-view-btn', 'v', v);
-  document.getElementById('mov-lista-card').hidden = v !== 'lista';
-  document.getElementById('mov-grafico-card').hidden = v !== 'grafico';
-  renderMovChart();
-}
-function setMovPeriodo(p) {
-  window._movPeriodo = p; window._movOffset = 0;
-  toggleBtns('.mov-per-btn', 'p', p);
-  renderMovChart();
-}
-function moveMovPeriodo(delta) {
-  const next = window._movOffset + delta;
-  if (next > 0) return;
-  window._movOffset = next;
-  renderMovChart();
-}
-
-function renderMovChart() {
-  const wrap = document.getElementById('mov-chart');
-  if (!wrap || document.getElementById('mov-grafico-card').hidden) return;
-  const p = window._movPeriodo, o = window._movOffset;
-  const rows = window._movData || [];
-  const conocidos = new Set(MOV_SERIES.map(s => s.k));
-  const tipoDe = r => conocidos.has(r.tipo) ? r.tipo : 'otros';
-  // solo las series que tienen datos en algún momento, así los colores no cambian al navegar
-  const presentes = new Set(rows.map(tipoDe));
-  const series = MOV_SERIES.concat([MOV_OTROS]).filter(s => presentes.has(s.k));
-
-  const { buckets, porMes, indice } = armarBuckets(rows, p, o);
-  buckets.forEach(b => { b.c = {}; series.forEach(s => b.c[s.k] = 0); });
-  rows.forEach(r => { const i = indice(r); if (i !== undefined) buckets[i].c[tipoDe(r)] += 1; });
-  const vis = buckets.filter(b => !b.futuro);
-
-  const lbl = periodoTexto(p, o);
-  document.getElementById('mov-nav').style.visibility = p === 'todo' ? 'hidden' : 'visible';
-  document.getElementById('mov-per-label').textContent = lbl.charAt(0).toUpperCase() + lbl.slice(1);
-  document.getElementById('mov-next').disabled = o >= 0;
-  document.getElementById('mov-chart-title').textContent =
-    'Movimientos ' + (porMes ? 'por mes' : 'por día') + ' — ' + (p === 'dia' ? '7 días hasta ' + lbl : lbl);
-
-  const fmtValor = n => n + (n === 1 ? ' mov.' : ' movs.');
-  document.getElementById('mov-legend').innerHTML = series.map(s => {
-    const tot = vis.reduce((a, b) => a + b.c[s.k], 0);
-    return `<span><i style="background:${s.color}"></i>${s.nombre} <b>${fmtValor(tot)}</b></span>`;
-  }).join('');
-
-  const cfg = { buckets, porMes, p, entero: true, series,
-    valor: (b, k) => b.c[k], fmtEje: v => String(Math.round(v)), fmtValor,
-    aria: 'Gráfico de líneas de cantidad de movimientos de inventario por tipo' };
-  document.getElementById('mov-chart-table').innerHTML = tablaLineas(cfg);
-  if (!rows.length) { wrap.innerHTML = '<div class="fc-empty">Sin movimientos registrados.</div>'; return; }
-  dibujarLineas(wrap, cfg);
-}
-
 window.addEventListener('resize', () => {
   clearTimeout(window._fcResize);
-  window._fcResize = setTimeout(() => { renderFinChart(); renderMovChart(); }, 150);
+  window._fcResize = setTimeout(renderFinChart, 150);
 });
 
 // ── CLIENTES ────────────────────────────────────────
@@ -2369,20 +2295,122 @@ async function renderClientes() {
   const formaMap = { contado:'Contado', cuenta_corriente:'Cta. Cte.', transferencia:'Transferencia', cheque:'Cheque' };
   const listaMap = { minorista:'badge-gray', mayorista:'badge-teal', especial:'badge-gold' };
   el.innerHTML = '<table class="tbl"><thead><tr><th>Razón social</th><th>Fantasía</th><th>CUIT</th><th>Teléfono</th><th>Pago</th><th>Lista</th><th></th></tr></thead><tbody>' +
-    data.map(c => `<tr>
+    data.map(c => `<tr class="cli-row" onclick="openClienteDetail(${c.id})" title="Ver historial del cliente">
       <td style="font-weight:500">${c.razon_social}</td>
       <td class="muted">${c.nombre_fantasia||'—'}</td>
       <td class="muted">${c.cuit||'—'}</td>
       <td class="muted">${c.telefono||'—'}</td>
       <td>${formaMap[c.forma_pago]||c.forma_pago}${c.plazo_pago>0?' ('+c.plazo_pago+'d)':''}</td>
       <td><span class="badge ${listaMap[c.lista_precios]||'badge-gray'}">${c.lista_precios||'—'}</span></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openClienteDetail(${c.id})">Ver</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openClienteDetail(${c.id})">Ver</button></td>
     </tr>`).join('') + '</tbody></table>';
+}
+
+// ── HISTORIAL DEL CLIENTE ───────────────────────────
+function hoyLocal() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function soloFecha(v) { return v ? String(v).slice(0, 10) : null; }
+function diasEntre(a, b) { return Math.round((parseFechaLocal(soloFecha(b)) - parseFechaLocal(soloFecha(a))) / 86400000); }
+function fechaCorta(v) { const d = parseFechaLocal(soloFecha(v)); return isNaN(d) ? '—' : d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3) + ' ' + d.getFullYear(); }
+function haceDias(n) { return n <= 0 ? 'hoy' : n === 1 ? 'ayer' : 'hace ' + n + ' días'; }
+// Fecha de cobro: columna fecha_cobro, o la marca "[Cobrada el AAAA-MM-DD]" en las notas si la columna todavía no existe
+function fechaCobro(f) {
+  if (f.fecha_cobro) return soloFecha(f.fecha_cobro);
+  const m = /\[Cobrada el (\d{4}-\d{2}-\d{2})\]/.exec(f.notas || '');
+  return m ? m[1] : null;
+}
+
+window._chFiltro = 'todo';
+function setChFiltro(f) {
+  window._chFiltro = f;
+  toggleBtns('.ch-fil-btn', 'f', f);
+  document.querySelectorAll('#ch-tl .ch-ev').forEach(e => { e.hidden = f !== 'todo' && e.dataset.g !== f; });
+}
+
+function armarHistorialCliente(c, ventas, facs, barriles) {
+  const hoy = hoyLocal();
+  const eventos = [], alertas = [];
+
+  // ventas
+  ventas.forEach(v => {
+    const fuera = (v.notas || '').startsWith('[PRECIO FUERA DE LISTA');
+    eventos.push({ g:'ventas', fecha: v.fecha, icon: (FIN_CATS[v.categoria]||{}).icon || '💰',
+      titulo: escHtml(v.descripcion || 'Venta'),
+      sub: [v.cantidad ? v.cantidad + ' u.' : '', fuera ? '⚠ precio fuera de lista' : '', v.usuario ? 'cargó ' + escHtml(v.usuario) : ''].filter(Boolean).join(' · '),
+      monto: fmtMoney(v.monto) });
+  });
+
+  // facturas: emisión, cobro y atrasos
+  let atrasadasHoy = [], pagosTarde = [], pagosATiempo = 0, sinFechaCobro = 0;
+  facs.forEach(f => {
+    const nro = f.numero ? 'Factura ' + escHtml(f.numero) : 'Factura';
+    const venc = soloFecha(f.fecha_vencimiento);
+    eventos.push({ g:'facturas', fecha: f.fecha_emision, icon:'📄', titulo: nro + ' emitida',
+      sub: [venc ? 'vence ' + fechaCorta(venc) : 'sin vencimiento', f.descripcion ? escHtml(f.descripcion) : ''].filter(Boolean).join(' · ') + ' ' + facEstBadge(f.estado === 'pendiente' && venc && venc < hoy ? 'vencida' : f.estado),
+      monto: fmtMoney(f.monto) });
+    if (f.estado === 'cobrada') {
+      const cobro = fechaCobro(f);
+      if (!cobro) { sinFechaCobro++; return; }
+      const atraso = venc ? diasEntre(venc, cobro) : 0;
+      if (atraso > 0) pagosTarde.push({ f, atraso });
+      else pagosATiempo++;
+      eventos.push({ g:'facturas', fecha: cobro, icon: atraso > 0 ? '⏰' : '✅',
+        titulo: nro + ' cobrada' + (atraso > 0 ? ' con ' + atraso + (atraso === 1 ? ' día' : ' días') + ' de atraso' : ' a tiempo'),
+        sub: venc ? 'vencía ' + fechaCorta(venc) : '', monto: fmtMoney(f.monto) });
+    } else if (venc && venc < hoy) {
+      atrasadasHoy.push({ f, atraso: diasEntre(venc, hoy) });
+      eventos.push({ g:'facturas', fecha: venc, icon:'⚠️', titulo: nro + ' venció sin cobrarse',
+        sub: 'lleva ' + diasEntre(venc, hoy) + ' días de atraso', monto: fmtMoney(f.monto) });
+    }
+  });
+
+  // barriles en poder del cliente
+  barriles.forEach(b => {
+    const dias = b.fecha_entrega ? diasEntre(b.fecha_entrega, hoy) : null;
+    eventos.push({ g:'barriles', fecha: b.fecha_entrega || null, icon:'🛢', titulo: 'Barril ' + escHtml(b.numero) + ' entregado',
+      sub: (b.capacidad ? b.capacidad + ' L · ' : '') + 'todavía en el cliente' + (dias !== null ? ' (' + dias + ' días)' : ''), monto: '' });
+  });
+
+  if (c.created_at) eventos.push({ g:'otros', fecha: soloFecha(c.created_at), icon:'👤', titulo:'Cliente dado de alta', sub: c.usuario ? 'por ' + escHtml(c.usuario) : '', monto:'' });
+
+  eventos.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  // alertas relevantes
+  if (atrasadasHoy.length) {
+    const tot = atrasadasHoy.reduce((a, x) => a + x.f.monto, 0), max = Math.max(...atrasadasHoy.map(x => x.atraso));
+    alertas.push(['mal', `⚠️ Tiene ${atrasadasHoy.length} ${atrasadasHoy.length === 1 ? 'factura vencida' : 'facturas vencidas'} sin cobrar por ${fmtMoney(tot)}. La más atrasada lleva ${max} días.`]);
+  }
+  if (pagosTarde.length) {
+    const prom = Math.round(pagosTarde.reduce((a, x) => a + x.atraso, 0) / pagosTarde.length);
+    alertas.push(['ojo', `⏰ Pagó tarde ${pagosTarde.length} ${pagosTarde.length === 1 ? 'vez' : 'veces'}, con ${prom} días de atraso en promedio.`]);
+  } else if (pagosATiempo > 0 && !atrasadasHoy.length) {
+    alertas.push(['bien', `✅ Pagó a tiempo todas las facturas con fecha de cobro registrada (${pagosATiempo}).`]);
+  }
+  const fueraLista = ventas.filter(v => (v.notas || '').startsWith('[PRECIO FUERA DE LISTA')).length;
+  if (fueraLista) alertas.push(['ojo', `💲 ${fueraLista} ${fueraLista === 1 ? 'venta se cobró' : 'ventas se cobraron'} con precio fuera de lista.`]);
+  const barrilesViejos = barriles.filter(b => b.fecha_entrega && diasEntre(b.fecha_entrega, hoy) > 30);
+  if (barrilesViejos.length) alertas.push(['ojo', `🛢 Tiene ${barrilesViejos.length} ${barrilesViejos.length === 1 ? 'barril' : 'barriles'} hace más de 30 días.`]);
+  if (sinFechaCobro) alertas.push(['ojo', `ℹ️ ${sinFechaCobro} ${sinFechaCobro === 1 ? 'factura cobrada no tiene' : 'facturas cobradas no tienen'} fecha de cobro, así que no se sabe si se pagaron a tiempo.`]);
+
+  // resumen
+  const totalVentas = ventas.reduce((a, v) => a + (Number(v.monto) || 0), 0);
+  const ultima = ventas.map(v => v.fecha).filter(Boolean).sort().pop();
+  const deuda = facs.filter(f => f.estado !== 'cobrada').reduce((a, f) => a + (Number(f.monto) || 0), 0);
+  const resumen = [
+    ['Total comprado', fmtMoney(totalVentas), ventas.length + (ventas.length === 1 ? ' compra' : ' compras')],
+    ['Última compra', ultima ? fechaCorta(ultima) : '—', ultima ? haceDias(diasEntre(ultima, hoy)) : 'sin compras'],
+    ['Deuda pendiente', fmtMoney(deuda), facs.filter(f => f.estado !== 'cobrada').length + ' sin cobrar'],
+    ['Barriles en su poder', String(barriles.length), barriles.length ? 'entregados' : 'ninguno'],
+  ];
+  return { eventos, alertas, resumen };
 }
 
 async function openClienteDetail(id) {
   const { data: c } = await sb.from('clientes').select('*').eq('id', id).single();
-  const { data: facs } = await sb.from('facturas').select('*').eq('cliente_id', id).order('fecha_emision',{ascending:false});
+  const [{ data: facs }, { data: ventas }, { data: barriles }] = await Promise.all([
+    sb.from('facturas').select('*').eq('cliente_id', id).order('fecha_emision',{ascending:false}),
+    sb.from('finanzas').select('*').eq('cliente_id', id).eq('tipo', 'ingreso').order('fecha',{ascending:false}),
+    sb.from('barriles').select('*').eq('cliente_id', id).eq('estado', 'entregado'),
+  ]);
   document.getElementById('cli-det-nombre').textContent = c.nombre_fantasia || c.razon_social;
   const formaMap = { contado:'Contado', cuenta_corriente:'Cuenta corriente', transferencia:'Transferencia', cheque:'Cheque' };
   let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
@@ -2393,15 +2421,19 @@ async function openClienteDetail(id) {
     <div><div class="form-label">Domicilio</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${c.domicilio||'—'}</div></div>
     <div><div class="form-label">Forma de pago</div><div style="font-family:var(--font-b);font-size:15px;color:var(--cream)">${formaMap[c.forma_pago]||c.forma_pago}${c.plazo_pago>0?' — '+c.plazo_pago+' días':''}</div></div>
   </div>`;
-  if (c.notas) html += `<div class="alert" style="margin-bottom:12px">${c.notas}</div>`;
-  if (facs&&facs.length) {
-    const pendiente = facs.filter(f=>f.estado==='pendiente'||f.estado==='vencida').reduce((s,f)=>s+f.monto,0);
-    html += `<div class="card-title" style="margin-bottom:8px">Facturas — deuda total: <strong style="color:var(--red2)">${fmtMoney(pendiente)}</strong></div>`;
-    html += '<table class="tbl"><thead><tr><th>Nro</th><th>Monto</th><th>Vence</th><th>Estado</th></tr></thead><tbody>' +
-      facs.slice(0,5).map(f=>`<tr><td class="muted">${f.numero||'—'}</td><td>${fmtMoney(f.monto)}</td><td class="muted">${f.fecha_vencimiento||'—'}</td><td>${facEstBadge(f.estado)}</td></tr>`).join('') +
-      '</tbody></table>';
-  }
+  if (c.notas) html += `<div class="alert" style="margin-bottom:12px">${escHtml(c.notas)}</div>`;
+  const h = armarHistorialCliente(c, ventas || [], facs || [], barriles || []);
+  html += '<div class="card-title" style="margin:6px 0 10px">Historial con el cliente</div>';
+  html += '<div class="ch-resumen">' + h.resumen.map(([l, v, n]) => `<div class="ch-stat"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('') + '</div>';
+  if (h.alertas.length) html += '<div class="ch-alertas">' + h.alertas.map(([t, txt]) => `<div class="ch-alerta ${t}">${txt}</div>`).join('') + '</div>';
+  const cuenta = g => h.eventos.filter(e => e.g === g).length;
+  html += '<div class="ch-filtros">' + [['todo','Todo',h.eventos.length],['ventas','Ventas',cuenta('ventas')],['facturas','Facturas y pagos',cuenta('facturas')],['barriles','Barriles',cuenta('barriles')]]
+    .map(([k, n, q]) => `<button class="btn btn-sm ch-fil-btn ${k==='todo'?'btn-primary':'btn-ghost'}" data-f="${k}" onclick="setChFiltro('${k}')">${n} (${q})</button>`).join('') + '</div>';
+  html += h.eventos.length
+    ? '<div class="ch-tl" id="ch-tl">' + h.eventos.map(e => `<div class="ch-ev" data-g="${e.g}"><div class="f">${e.fecha ? fechaCorta(e.fecha) : 'sin fecha'}</div><div class="i">${e.icon}</div><div class="t">${e.titulo}${e.sub ? '<small>' + e.sub + '</small>' : ''}</div><div class="m">${e.monto}</div></div>`).join('') + '</div>'
+    : '<div class="fc-empty">Todavía no hay interacciones registradas con este cliente.</div>';
   document.getElementById('cli-det-content').innerHTML = html;
+  window._chFiltro = 'todo';
   document.getElementById('cli-del-btn').onclick = async () => {
     if (!confirm('¿Eliminar cliente "'+c.razon_social+'"?')) return;
     await sb.from('clientes').delete().eq('id', id);
@@ -2671,7 +2703,15 @@ async function renderCobros() {
 }
 
 async function marcarCobrada(id) {
-  await sb.from('facturas').update({estado:'cobrada'}).eq('id',id);
+  const hoy = hoyLocal();
+  let { error } = await sb.from('facturas').update({ estado:'cobrada', fecha_cobro: hoy }).eq('id', id);
+  if (error) {
+    // si la columna fecha_cobro todavía no existe, la fecha queda anotada en las notas
+    const { data: f } = await sb.from('facturas').select('notas').eq('id', id).single();
+    const notas = ((f?.notas || '') + ' [Cobrada el ' + hoy + ']').trim();
+    ({ error } = await sb.from('facturas').update({ estado:'cobrada', notas }).eq('id', id));
+  }
+  if (error) { showToast('Error: ' + error.message); return; }
   showToast('✓ Marcada como cobrada'); renderCobros();
 }
 
