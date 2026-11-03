@@ -342,7 +342,33 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
       </div>
       <div id="inv-insumos"><div class="card"><div id="inv-list-insumos"><div class="loading">cargando...</div></div></div></div>
       <div id="inv-producto" style="display:none"><div class="card"><div id="inv-list-producto"></div></div></div>
-      <div id="inv-movimientos" style="display:none"><div class="card"><div id="inv-list-movimientos"></div></div></div>
+      <div id="inv-movimientos" style="display:none">
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <button class="btn btn-primary btn-sm mov-view-btn" data-v="lista" onclick="setMovVista('lista')">Lista</button>
+          <button class="btn btn-ghost btn-sm mov-view-btn" data-v="grafico" onclick="setMovVista('grafico')">Gráfico</button>
+        </div>
+        <div class="card" id="mov-lista-card"><div id="inv-list-movimientos"></div></div>
+        <div class="card" id="mov-grafico-card" hidden>
+          <div class="card-title" style="flex-wrap:wrap;gap:8px;">
+            <span id="mov-chart-title">Movimientos</span>
+            <span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;text-transform:none;letter-spacing:0;">
+              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="dia" onclick="setMovPeriodo('dia')">Día</button>
+              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="semana" onclick="setMovPeriodo('semana')">Semana</button>
+              <button class="btn btn-primary btn-sm mov-per-btn" data-p="mes" onclick="setMovPeriodo('mes')">Mes</button>
+              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="anio" onclick="setMovPeriodo('anio')">Año</button>
+              <button class="btn btn-ghost btn-sm mov-per-btn" data-p="todo" onclick="setMovPeriodo('todo')">Todo</button>
+              <span id="mov-nav" style="display:flex;gap:6px;align-items:center;">
+                <button class="btn btn-ghost btn-sm" onclick="moveMovPeriodo(-1)" title="Período anterior">‹</button>
+                <span id="mov-per-label" style="font-family:var(--font-b);font-size:13px;color:var(--cream);min-width:110px;text-align:center;"></span>
+                <button class="btn btn-ghost btn-sm" id="mov-next" onclick="moveMovPeriodo(1)" title="Período siguiente">›</button>
+              </span>
+            </span>
+          </div>
+          <div class="fc-legend" id="mov-legend"></div>
+          <div id="mov-chart" class="fc-wrap"></div>
+          <details class="fc-details"><summary>Ver datos en tabla</summary><div id="mov-chart-table" style="overflow-x:auto;"></div></details>
+        </div>
+      </div>
     </div>
 
     <!-- RECETAS -->
@@ -1780,6 +1806,8 @@ async function renderInventario() {
   else { pl.innerHTML = '<table class="tbl"><thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Merma</th></tr></thead><tbody>' + productos.map(p=>`<tr><td>${p.lote_nombre} <span class="muted">#${p.lote_id}</span></td><td><span class="badge badge-teal">${p.tipo}</span></td><td><span class="num">${p.cantidad}</span> <span class="muted">${p.unidad}</span></td><td class="muted">${p.fecha}</td><td class="muted">${p.merma>0?p.merma+' lts':'—'}</td></tr>`).join('') + '</tbody></table>'; }
 
   const { data: movs } = await sb.from('movimientos').select('*').order('created_at',{ascending:false});
+  window._movData = movs || [];
+  renderMovChart();
   const ml = document.getElementById('inv-list-movimientos');
   if (!movs||!movs.length) { ml.innerHTML = '<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">Sin movimientos</div></div>'; }
   else {
@@ -1951,8 +1979,7 @@ function movePeriodo(delta) {
 }
 
 // Devuelve [inicio, fin) del período seleccionado, en hora local
-function rangoPeriodo() {
-  const p = window._finPeriodo, o = window._finOffset || 0;
+function rangoPeriodo(p = window._finPeriodo, o = window._finOffset || 0) {
   const h = new Date(); h.setHours(0,0,0,0);
   if (p === 'dia') {
     const ini = new Date(h); ini.setDate(h.getDate() + o);
@@ -1969,8 +1996,8 @@ function rangoPeriodo() {
   return null;
 }
 
-function periodoTexto() {
-  const p = window._finPeriodo, o = window._finOffset || 0, r = rangoPeriodo();
+function periodoTexto(p = window._finPeriodo, o = window._finOffset || 0) {
+  const r = rangoPeriodo(p, o);
   if (!r) return 'histórico';
   const [ini, fin] = r;
   const dm = d => d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3);
@@ -2031,17 +2058,18 @@ function setFinMetrica(m) {
   renderFinChart();
 }
 
-// Arma los intervalos (por día o por mes) según el período elegido
-function finBuckets(rows) {
-  const p = window._finPeriodo;
+// ── GRÁFICO DE LÍNEAS REUTILIZABLE ──────────────────
+// Arma los intervalos (por día o por mes) para el período p con desplazamiento o.
+// Devuelve los intervalos y una función que ubica cada fila en su intervalo.
+function armarBuckets(rows, p, o, campo = 'fecha') {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const out = [];
   let porMes = false, ini, fin;
   if (p === 'anio' || p === 'todo') {
     porMes = true;
-    if (p === 'anio') [ini, fin] = rangoPeriodo();
+    if (p === 'anio') [ini, fin] = rangoPeriodo(p, o);
     else {
-      const ts = rows.map(r => parseFechaLocal(r.fecha).getTime()).filter(t => !isNaN(t));
+      const ts = rows.map(r => parseFechaLocal(r[campo]).getTime()).filter(t => !isNaN(t));
       const min = ts.length ? new Date(Math.min(...ts)) : hoy;
       ini = new Date(min.getFullYear(), min.getMonth(), 1);
       fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
@@ -2049,25 +2077,130 @@ function finBuckets(rows) {
     for (let d = ini; d < fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) out.push(d);
   } else {
     if (p === 'dia') { // 7 días que terminan en el día elegido
-      const [a] = rangoPeriodo();
+      const [a] = rangoPeriodo(p, o);
       ini = new Date(a.getFullYear(), a.getMonth(), a.getDate() - 6);
       fin = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1);
-    } else [ini, fin] = rangoPeriodo();
+    } else [ini, fin] = rangoPeriodo(p, o);
     for (let d = ini; d < fin; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) out.push(d);
   }
   const key = d => porMes ? d.getFullYear()*12 + d.getMonth() : d.getFullYear()*10000 + d.getMonth()*100 + d.getDate();
   const idx = new Map(out.map((d, i) => [key(d), i]));
-  const buckets = out.map(d => ({ d, futuro: d > hoy, monto:{ingreso:0,gasto:0}, cantidad:{ingreso:0,gasto:0} }));
-  rows.forEach(r => {
-    const d = parseFechaLocal(r.fecha);
-    const i = idx.get(key(d));
-    if (i === undefined || !(r.tipo in FC_COL)) return;
-    buckets[i].monto[r.tipo] += Number(r.monto) || 0;
-    buckets[i].cantidad[r.tipo] += 1;
-  });
-  return { buckets, porMes };
+  const buckets = out.map(d => ({ d, futuro: d > hoy }));
+  const indice = row => { const d = parseFechaLocal(row[campo]); return isNaN(d) ? undefined : idx.get(key(d)); };
+  return { buckets, porMes, indice };
 }
 
+function etiquetaBucket(d, porMes, largo, p) {
+  if (porMes) {
+    const m = MESES[d.getMonth()];
+    return largo ? m.charAt(0).toUpperCase() + m.slice(1) + ' ' + d.getFullYear()
+                 : m.slice(0,3) + (p === 'todo' ? " '" + String(d.getFullYear()).slice(2) : '');
+  }
+  if (largo) return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3) + ' ' + d.getFullYear();
+  if (p === 'mes') return String(d.getDate());
+  return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate();
+}
+
+function escalaEje(max, entero) {
+  if (max <= 0) return entero ? { top: 4, paso: 1 } : { top: 1000, paso: 250 };
+  const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto)));
+  let paso = [1,2,2.5,5,10].map(m => m*mag).find(v => v >= bruto);
+  if (entero) paso = Math.max(1, Math.ceil(paso));
+  return { top: Math.ceil(max / paso) * paso, paso };
+}
+
+// Dibuja un gráfico de líneas con cruz y tooltip al pasar el mouse.
+// cfg: { buckets, porMes, p, series:[{k,nombre,color}], valor(b,k), fmtEje(n), fmtValor(n), entero, aria }
+function dibujarLineas(wrap, cfg) {
+  const { buckets, porMes, p, series, valor, fmtEje, fmtValor } = cfg;
+  const vis = buckets.filter(b => !b.futuro);
+  if (!vis.length) { wrap.innerHTML = '<div class="fc-empty">Este período todavía no empezó.</div>'; return; }
+  if (!series.length) { wrap.innerHTML = '<div class="fc-empty">Sin datos para graficar.</div>'; return; }
+
+  const W = Math.max(280, wrap.clientWidth || 600), H = W < 500 ? 220 : 260;
+  const maxNombre = Math.max(...series.map(s => s.nombre.length));
+  const m = { l: 52, r: Math.min(130, 22 + maxNombre * 7), t: 14, b: 28 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const max = Math.max(0, ...vis.flatMap(b => series.map(s => valor(b, s.k))));
+  const { top, paso } = escalaEje(max, cfg.entero);
+  const n = buckets.length;
+  const x = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1));
+  const y = v => m.t + ih - (v / top) * ih;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${escHtml(cfg.aria || 'Gráfico de líneas')}">`;
+  for (let v = 0; v <= top + 1e-9; v += paso) {
+    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'rgba(80,60,30,0.30)' : 'rgba(80,60,30,0.10)'}" stroke-width="1"/>`;
+    svg += `<text class="fc-axis" x="${m.l - 8}" y="${y(v) + 3}" text-anchor="end">${fmtEje(v)}</text>`;
+  }
+  const maxLbls = Math.max(2, Math.floor(iw / (porMes ? 46 : (p === 'mes' ? 26 : 52))));
+  const cada = Math.ceil(n / maxLbls);
+  buckets.forEach((b, i) => {
+    if (i % cada !== 0 && i !== n - 1) return;
+    if (i === n - 1 && n > 1 && (n - 1) % cada !== 0 && (n - 1) % cada < cada / 2) return; // evita pisar la etiqueta anterior
+    svg += `<text class="fc-axis" x="${x(i)}" y="${H - 8}" text-anchor="middle">${etiquetaBucket(b.d, porMes, false, p)}</text>`;
+  });
+
+  const ult = vis.length - 1;
+  // el mes en curso todavía no terminó: su tramo va punteado
+  const hoyD = new Date();
+  const enCurso = porMes && vis.length > 1 && vis[ult].d.getFullYear() === hoyD.getFullYear() && vis[ult].d.getMonth() === hoyD.getMonth();
+  const finales = [];
+  series.forEach(s => {
+    const pts = vis.map((b, i) => `${x(i).toFixed(1)},${y(valor(b, s.k)).toFixed(1)}`);
+    const solidos = enCurso ? pts.slice(0, -1) : pts;
+    svg += `<polyline points="${solidos.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (enCurso) svg += `<polyline points="${pts.slice(-2).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
+    svg += `<circle cx="${x(ult)}" cy="${y(valor(vis[ult], s.k))}" r="4" fill="${s.color}" stroke="#fff" stroke-width="2"/>`;
+    finales.push({ s, yy: y(valor(vis[ult], s.k)) });
+  });
+  // etiquetas directas al final de cada línea, separadas si se pisan
+  finales.sort((a, b) => a.yy - b.yy);
+  for (let i = 1; i < finales.length; i++) finales[i].yy = Math.max(finales[i].yy, finales[i-1].yy + 15);
+  const exceso = finales.length ? finales[finales.length - 1].yy - (m.t + ih) : 0;
+  if (exceso > 0) finales.forEach(f => f.yy -= exceso);
+  finales.forEach(f => { svg += `<text class="fc-endlbl" x="${x(ult) + 9}" y="${f.yy + 4}">${escHtml(f.s.nombre)}</text>`; });
+
+  svg += `<line class="fc-cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" stroke="rgba(80,60,30,0.30)" stroke-width="1" visibility="hidden"/>`;
+  series.forEach((s, i) => { svg += `<circle class="fc-dot" data-i="${i}" r="5" fill="${s.color}" stroke="#fff" stroke-width="2" visibility="hidden"/>`; });
+  svg += `<rect class="fc-hit" x="${m.l - 10}" y="0" width="${iw + 20}" height="${H}" fill="transparent"/>`;
+  svg += '</svg><div class="fc-tip" hidden></div>';
+  wrap.innerHTML = svg;
+
+  const hit = wrap.querySelector('.fc-hit'), tip = wrap.querySelector('.fc-tip'), cross = wrap.querySelector('.fc-cross');
+  const dots = [...wrap.querySelectorAll('.fc-dot')];
+  const svgEl = wrap.querySelector('svg');
+  const ocultar = () => { tip.hidden = true; cross.setAttribute('visibility','hidden'); dots.forEach(d => d.setAttribute('visibility','hidden')); };
+  const mover = ev => {
+    const r = svgEl.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * (W / r.width);
+    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw / (n - 1)));
+    i = Math.max(0, Math.min(ult, i));
+    const b = vis[i], cx = x(i);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility','visible');
+    dots.forEach((d, k) => { d.setAttribute('cx', cx); d.setAttribute('cy', y(valor(b, series[k].k))); d.setAttribute('visibility','visible'); });
+    tip.innerHTML = `<div class="fc-tip-hd">${etiquetaBucket(b.d, porMes, true, p)}${enCurso && i === ult ? ' · en curso' : ''}</div>` +
+      series.map(s => `<div class="fc-row"><span><i style="background:${s.color}"></i>${escHtml(s.nombre)}</span><b>${fmtValor(valor(b, s.k))}</b></div>`).join('');
+    tip.hidden = false;
+    const sx = cx * (r.width / W), tw = tip.offsetWidth;
+    tip.style.left = (sx + 14 + tw > r.width ? sx - 14 - tw : sx + 14) + 'px';
+    tip.style.top = (m.t * (r.height / H)) + 'px';
+  };
+  hit.addEventListener('pointermove', mover);
+  hit.addEventListener('pointerdown', mover);
+  hit.addEventListener('pointerleave', ocultar);
+}
+
+// Tabla accesible con los mismos datos del gráfico
+function tablaLineas(cfg) {
+  const vis = cfg.buckets.filter(b => !b.futuro);
+  return '<table class="tbl"><thead><tr><th>' + (cfg.porMes ? 'Mes' : 'Día') + '</th>' +
+    cfg.series.map(s => `<th style="text-align:right">${escHtml(s.nombre)}</th>`).join('') + '</tr></thead><tbody>' +
+    vis.map(b => `<tr><td>${etiquetaBucket(b.d, cfg.porMes, true, cfg.p)}</td>` +
+      cfg.series.map(s => `<td style="text-align:right">${cfg.fmtValor(cfg.valor(b, s.k))}</td>`).join('') + '</tr>').join('') +
+    '</tbody></table>';
+}
+
+// ── GRÁFICO DE FINANZAS ──
 function fcCompacto(n) {
   if (window._finMetrica === 'cantidad') return String(Math.round(n));
   const a = Math.abs(n);
@@ -2077,114 +2210,34 @@ function fcCompacto(n) {
 }
 function fcValor(n) { return window._finMetrica === 'cantidad' ? n + (n === 1 ? ' mov.' : ' movs.') : fmtMoney(n); }
 
-function fcEtiqueta(b, porMes, largo) {
-  const d = b.d;
-  if (porMes) {
-    const m = MESES[d.getMonth()];
-    return largo ? m.charAt(0).toUpperCase() + m.slice(1) + ' ' + d.getFullYear()
-                 : m.slice(0,3) + (window._finPeriodo === 'todo' ? " '" + String(d.getFullYear()).slice(2) : '');
-  }
-  if (largo) return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0,3) + ' ' + d.getFullYear();
-  if (window._finPeriodo === 'mes') return String(d.getDate());
-  return DIAS_CORTOS[d.getDay()] + ' ' + d.getDate();
-}
-
-function fcEscala(max) {
-  if (max <= 0) return { top: window._finMetrica === 'cantidad' ? 4 : 1000, paso: window._finMetrica === 'cantidad' ? 1 : 250 };
-  const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto)));
-  let paso = [1,2,2.5,5,10].map(m => m*mag).find(v => v >= bruto);
-  if (window._finMetrica === 'cantidad') paso = Math.max(1, Math.ceil(paso));
-  return { top: Math.ceil(max / paso) * paso, paso };
-}
-
 function renderFinChart() {
   const wrap = document.getElementById('fin-chart');
   if (!wrap || document.getElementById('fin-stats').hidden) return;
-  const met = window._finMetrica;
-  const { buckets, porMes } = finBuckets(window._finData || []);
+  const met = window._finMetrica, p = window._finPeriodo;
+  const rows = window._finData || [];
+  const { buckets, porMes, indice } = armarBuckets(rows, p, window._finOffset || 0);
+  buckets.forEach(b => { b.monto = {ingreso:0, gasto:0}; b.cantidad = {ingreso:0, gasto:0}; });
+  rows.forEach(r => {
+    const i = indice(r);
+    if (i === undefined || !(r.tipo in FC_COL)) return;
+    buckets[i].monto[r.tipo] += Number(r.monto) || 0;
+    buckets[i].cantidad[r.tipo] += 1;
+  });
   const vis = buckets.filter(b => !b.futuro);
   const pLbl = periodoTexto();
   const gran = porMes ? 'por mes' : 'por día';
   document.getElementById('fin-chart-title').textContent =
-    'Evolución ' + gran + ' — ' + (window._finPeriodo === 'dia' ? '7 días hasta ' + pLbl : pLbl);
+    'Evolución ' + gran + ' — ' + (p === 'dia' ? '7 días hasta ' + pLbl : pLbl);
   FC_SERIES.forEach(s => {
     const tot = vis.reduce((a, b) => a + b[met][s.k], 0);
     document.getElementById(s.k === 'ingreso' ? 'fc-tot-ing' : 'fc-tot-gas').textContent = fcValor(tot);
   });
-
-  // tabla de datos
-  document.getElementById('fin-chart-table').innerHTML = '<table class="tbl"><thead><tr><th>' + (porMes ? 'Mes' : 'Día') + '</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Gastos</th></tr></thead><tbody>' +
-    vis.map(b => `<tr><td>${fcEtiqueta(b, porMes, true)}</td><td style="text-align:right">${fcValor(b[met].ingreso)}</td><td style="text-align:right">${fcValor(b[met].gasto)}</td></tr>`).join('') + '</tbody></table>';
-
-  if (!vis.length) { wrap.innerHTML = '<div class="fc-empty">Este período todavía no empezó.</div>'; return; }
-
-  const W = Math.max(280, wrap.clientWidth || 600), H = W < 500 ? 220 : 260;
-  const m = { l: 52, r: W < 500 ? 62 : 74, t: 14, b: 28 };
-  const iw = W - m.l - m.r, ih = H - m.t - m.b;
-  const max = Math.max(0, ...vis.map(b => Math.max(b[met].ingreso, b[met].gasto)));
-  const { top, paso } = fcEscala(max);
-  const n = buckets.length;
-  const x = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1));
-  const y = v => m.t + ih - (v / top) * ih;
-
-  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Gráfico de líneas de ingresos y gastos ${gran}">`;
-  for (let v = 0; v <= top + 1e-9; v += paso) {
-    svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'rgba(80,60,30,0.30)' : 'rgba(80,60,30,0.10)'}" stroke-width="1"/>`;
-    svg += `<text class="fc-axis" x="${m.l - 8}" y="${y(v) + 3}" text-anchor="end">${fcCompacto(v)}</text>`;
-  }
-  const maxLbls = Math.max(2, Math.floor(iw / (porMes ? 46 : (window._finPeriodo === 'mes' ? 26 : 52))));
-  const cada = Math.ceil(n / maxLbls);
-  buckets.forEach((b, i) => {
-    if (i % cada !== 0 && i !== n - 1) return;
-    if (i === n - 1 && n > 1 && (n - 1) % cada !== 0 && (n - 1) % cada < cada / 2) return; // evita pisar la etiqueta anterior
-    svg += `<text class="fc-axis" x="${x(i)}" y="${H - 8}" text-anchor="middle">${fcEtiqueta(b, porMes, false)}</text>`;
-  });
-
-  const ult = vis.length - 1;
-  const finales = [];
-  // el mes en curso todavía no terminó: su tramo va punteado
-  const hoyD = new Date();
-  const enCurso = porMes && vis.length > 1 && vis[ult].d.getFullYear() === hoyD.getFullYear() && vis[ult].d.getMonth() === hoyD.getMonth();
-  FC_SERIES.forEach(s => {
-    const pts = vis.map((b, i) => `${x(i).toFixed(1)},${y(b[met][s.k]).toFixed(1)}`);
-    const solidos = enCurso ? pts.slice(0, -1) : pts;
-    svg += `<polyline points="${solidos.join(' ')}" fill="none" stroke="${FC_COL[s.k]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    if (enCurso) svg += `<polyline points="${pts.slice(-2).join(' ')}" fill="none" stroke="${FC_COL[s.k]}" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
-    svg += `<circle cx="${x(ult)}" cy="${y(vis[ult][met][s.k])}" r="4" fill="${FC_COL[s.k]}" stroke="#fff" stroke-width="2"/>`;
-    finales.push({ s, yy: y(vis[ult][met][s.k]) });
-  });
-  // etiquetas directas al final de cada línea, separadas si se pisan
-  finales.sort((a, b) => a.yy - b.yy);
-  if (finales[1].yy - finales[0].yy < 15) { const mid = (finales[0].yy + finales[1].yy) / 2; finales[0].yy = mid - 7.5; finales[1].yy = mid + 7.5; }
-  finales.forEach(f => { svg += `<text class="fc-endlbl" x="${x(ult) + 9}" y="${f.yy + 4}">${f.s.nombre}</text>`; });
-
-  svg += `<line id="fc-cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" stroke="rgba(80,60,30,0.30)" stroke-width="1" visibility="hidden"/>`;
-  FC_SERIES.forEach(s => { svg += `<circle id="fc-dot-${s.k}" r="5" fill="${FC_COL[s.k]}" stroke="#fff" stroke-width="2" visibility="hidden"/>`; });
-  svg += `<rect id="fc-hit" x="${m.l - 10}" y="0" width="${iw + 20}" height="${H}" fill="transparent"/>`;
-  svg += '</svg><div class="fc-tip" id="fc-tip" hidden></div>';
-  wrap.innerHTML = svg;
-
-  const hit = document.getElementById('fc-hit'), tip = document.getElementById('fc-tip'), cross = document.getElementById('fc-cross');
-  const svgEl = wrap.querySelector('svg');
-  const ocultar = () => { tip.hidden = true; cross.setAttribute('visibility','hidden'); FC_SERIES.forEach(s => document.getElementById('fc-dot-' + s.k).setAttribute('visibility','hidden')); };
-  const mover = ev => {
-    const r = svgEl.getBoundingClientRect();
-    const px = (ev.clientX - r.left) * (W / r.width);
-    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw / (n - 1)));
-    i = Math.max(0, Math.min(ult, i));
-    const b = vis[i], cx = x(i);
-    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility','visible');
-    FC_SERIES.forEach(s => { const d = document.getElementById('fc-dot-' + s.k); d.setAttribute('cx', cx); d.setAttribute('cy', y(b[met][s.k])); d.setAttribute('visibility','visible'); });
-    tip.innerHTML = `<div class="fc-tip-hd">${fcEtiqueta(b, porMes, true)}${enCurso && i === ult ? ' · en curso' : ''}</div>` +
-      FC_SERIES.map(s => `<div class="fc-row"><span><i style="background:${FC_COL[s.k]}"></i>${s.nombre}</span><b>${fcValor(b[met][s.k])}</b></div>`).join('');
-    tip.hidden = false;
-    const sx = cx * (r.width / W), tw = tip.offsetWidth;
-    tip.style.left = (sx + 14 + tw > r.width ? sx - 14 - tw : sx + 14) + 'px';
-    tip.style.top = (m.t * (r.height / H)) + 'px';
-  };
-  hit.addEventListener('pointermove', mover);
-  hit.addEventListener('pointerdown', mover);
-  hit.addEventListener('pointerleave', ocultar);
+  const cfg = { buckets, porMes, p, entero: met === 'cantidad',
+    series: FC_SERIES.map(s => ({ ...s, color: FC_COL[s.k] })),
+    valor: (b, k) => b[met][k], fmtEje: fcCompacto, fmtValor: fcValor,
+    aria: 'Gráfico de líneas de ingresos y gastos ' + gran };
+  document.getElementById('fin-chart-table').innerHTML = tablaLineas(cfg);
+  dibujarLineas(wrap, cfg);
 }
 
 // Barras horizontales: gastos del período agrupados por categoría
@@ -2210,9 +2263,77 @@ function renderFinCategorias(filtered) {
   }).join('') + `<div class="cb-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px;"><div class="cb-lbl" style="color:var(--muted)">Total</div><div class="cb-val">${fmtMoney(total)}</div></div>`;
 }
 
+// ── GRÁFICO DEL HISTORIAL DE MOVIMIENTOS (INVENTARIO) ──
+// Cuenta movimientos por tipo: las cantidades vienen en unidades distintas (kg, lts, latas) y no se pueden sumar.
+window._movVista = 'lista';
+window._movPeriodo = 'mes';
+window._movOffset = 0;
+const MOV_SERIES = [
+  { k:'entrada',    nombre:'Entradas',   color:'#2a78d6' },
+  { k:'produccion', nombre:'Producción', color:'#eb6834' },
+  { k:'envasado',   nombre:'Envasado',   color:'#1baf7a' },
+];
+const MOV_OTROS = { k:'otros', nombre:'Otros', color:'#8a8178' };
+
+function setMovVista(v) {
+  window._movVista = v;
+  toggleBtns('.mov-view-btn', 'v', v);
+  document.getElementById('mov-lista-card').hidden = v !== 'lista';
+  document.getElementById('mov-grafico-card').hidden = v !== 'grafico';
+  renderMovChart();
+}
+function setMovPeriodo(p) {
+  window._movPeriodo = p; window._movOffset = 0;
+  toggleBtns('.mov-per-btn', 'p', p);
+  renderMovChart();
+}
+function moveMovPeriodo(delta) {
+  const next = window._movOffset + delta;
+  if (next > 0) return;
+  window._movOffset = next;
+  renderMovChart();
+}
+
+function renderMovChart() {
+  const wrap = document.getElementById('mov-chart');
+  if (!wrap || document.getElementById('mov-grafico-card').hidden) return;
+  const p = window._movPeriodo, o = window._movOffset;
+  const rows = window._movData || [];
+  const conocidos = new Set(MOV_SERIES.map(s => s.k));
+  const tipoDe = r => conocidos.has(r.tipo) ? r.tipo : 'otros';
+  // solo las series que tienen datos en algún momento, así los colores no cambian al navegar
+  const presentes = new Set(rows.map(tipoDe));
+  const series = MOV_SERIES.concat([MOV_OTROS]).filter(s => presentes.has(s.k));
+
+  const { buckets, porMes, indice } = armarBuckets(rows, p, o);
+  buckets.forEach(b => { b.c = {}; series.forEach(s => b.c[s.k] = 0); });
+  rows.forEach(r => { const i = indice(r); if (i !== undefined) buckets[i].c[tipoDe(r)] += 1; });
+  const vis = buckets.filter(b => !b.futuro);
+
+  const lbl = periodoTexto(p, o);
+  document.getElementById('mov-nav').style.visibility = p === 'todo' ? 'hidden' : 'visible';
+  document.getElementById('mov-per-label').textContent = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+  document.getElementById('mov-next').disabled = o >= 0;
+  document.getElementById('mov-chart-title').textContent =
+    'Movimientos ' + (porMes ? 'por mes' : 'por día') + ' — ' + (p === 'dia' ? '7 días hasta ' + lbl : lbl);
+
+  const fmtValor = n => n + (n === 1 ? ' mov.' : ' movs.');
+  document.getElementById('mov-legend').innerHTML = series.map(s => {
+    const tot = vis.reduce((a, b) => a + b.c[s.k], 0);
+    return `<span><i style="background:${s.color}"></i>${s.nombre} <b>${fmtValor(tot)}</b></span>`;
+  }).join('');
+
+  const cfg = { buckets, porMes, p, entero: true, series,
+    valor: (b, k) => b.c[k], fmtEje: v => String(Math.round(v)), fmtValor,
+    aria: 'Gráfico de líneas de cantidad de movimientos de inventario por tipo' };
+  document.getElementById('mov-chart-table').innerHTML = tablaLineas(cfg);
+  if (!rows.length) { wrap.innerHTML = '<div class="fc-empty">Sin movimientos registrados.</div>'; return; }
+  dibujarLineas(wrap, cfg);
+}
+
 window.addEventListener('resize', () => {
   clearTimeout(window._fcResize);
-  window._fcResize = setTimeout(renderFinChart, 150);
+  window._fcResize = setTimeout(() => { renderFinChart(); renderMovChart(); }, 150);
 });
 
 // ── CLIENTES ────────────────────────────────────────
